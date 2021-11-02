@@ -1,4 +1,3 @@
-#include <string>
 #include "../include/FileReader.h"
 
 
@@ -6,45 +5,69 @@
 namespace tl
 {
     FileReader::FileReader(const char* path) :
-            fileDir(::open(path, O_RDONLY)),
-            pos(UINT64_C(0))
+            mFileDir(::CORRECT_VER(open)(path, CORRECT_VER(O_RDONLY)))
     {
-        if (fileDir != -1)
+        if (mFileDir != -1)
         {
 #ifdef __GNUC__
             struct ::stat file{};
             ::stat(path, &file);
             const ::__off_t fSize(file.st_size);
-#elif
-
+//#elif _MSC_VER
+//            HANDLE hF = CreateFileA("F:\\TestLib\\TestLib\\test.exe", 0x00, 0x00, NULL,
+//                OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+//            const DWORD fSize(GetFileSize(hF, NULL));
 #else
-            std::FILE* file(std::fopen(path, "r"));
-            std::fseek(file, 0, SEEK_END);
-            const long fSize(std::ftell(file));
+            const long fSize(::CORRECT_VER(lseek)(mFileDir, 0L, SEEK_END));
+            ::CORRECT_VER(lseek)(mFileDir, 0L, SEEK_SET);
 #endif
 
-            mData = static_cast<char*>(std::malloc(fSize));
+            mData = new char[fSize + 1];
+            mData[fSize] = '\000';
 
-            ::read(fileDir, mData, fSize);
-            ::close(fileDir);
+            ::CORRECT_VER(read)(mFileDir, mData, fSize);
+            ::CORRECT_VER(close)(mFileDir);
 
             mBegin = mData;
         }
+        else
+        {
+            mData = nullptr;
+            mBegin = nullptr;
+        }
+    }
+
+    FileReader::FileReader(const std::string& path) :
+            FileReader(path.c_str())
+    {
+
     }
 
     FileReader::~FileReader()
     {
-        delete mBegin;
+        delete[] mBegin;
     }
 
     bool FileReader::isOpen() const
     {
-        return fileDir != -1;
+        return mFileDir != -1;
     }
 
     bool FileReader::isEndOfFile() const
     {
         return *mData == '\000';
+    }
+
+    bool FileReader::readChar(char& c)
+    {
+        if (isEndOfFile())
+        {
+            return false;
+        }
+
+        c = *mData++;
+
+        return true;
     }
 
     bool FileReader::readNextInt(int &num)
@@ -73,6 +96,11 @@ namespace tl
         return true;
     }
 
+    bool FileReader::readStr(char*& s, const std::size_t size)
+    {
+        return false;
+    }
+
     bool FileReader::readStr(std::string& s)
     {
         s.clear();
@@ -82,13 +110,24 @@ namespace tl
             return false;
         }
 
-        bool result(false);
         while (*mData != ' ' && !isEndOfFile())
         {
             s.push_back(*mData++);
         }
 
         mData++;
+
+        return true;
+    }
+
+    bool FileReader::readBool(bool& b)
+    {
+        if (isEndOfFile() || *mData != '0' || *mData != '1')
+        {
+            return false;
+        }
+
+        b = static_cast<bool>(*mData++ - '0');
 
         return true;
     }
