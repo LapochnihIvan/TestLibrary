@@ -11,6 +11,7 @@
 #   define _CRT_SECURE_NO_WARNINGS
 
 #   include <corecrt_io.h>
+
 //#   include <Windows.h>
 
 #   define CORRECT_VER(func) _ ## func

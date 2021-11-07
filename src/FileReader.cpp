@@ -1,4 +1,3 @@
-#include <stdexcept>
 #include "../include/FileReader.h"
 
 
@@ -160,35 +159,60 @@ namespace tl
         return   readAbstractInt(num, UINT64_MAX);
     }
 
-//    bool FileReader::readDouble(double num)
-//    {
-//        if (isEndOfFile())
-//        {
-//            return false;
-//        }
-//
-//        num = 0.;
-//
-//        char* begin(mData);
-//        double nexNum;
-//        while (isNotWhitespace() && !isEndOfFile())
-//        {
-//            nexNum = *mData - '0';
-//            if (*mData < '0' || *mData > '9')
-//                    //||
-//                ((limit - nexNum) / 10) < num)
-//
-//            {
-//                mData = begin;
-//                return false;
-//            }
-//            num = num * 10. + nexNum;
-//
-//            mData++;
-//        }
-//
-//        return true;
-//    }
+    bool FileReader::readNum(float& num)
+    {
+        if (isEndOfFile())
+        {
+            return false;
+        }
+
+        num = 0.F;
+
+        char* begin(mData);
+        float nexNum;
+        while (*mData != '.' && isNotWhitespace()
+            && !isEndOfFile())
+        {
+            nexNum = *mData - '0';
+            if (*mData < '0' || *mData > '9')
+                    //||
+                //((limit - nexNum) / 10) < num)
+
+            {
+                mData = begin;
+                return false;
+            }
+            num = num * 10.F + nexNum;
+
+            mData++;
+        }
+
+        mData++;
+
+        float afterPoint = 0.F;
+        float countNulls = 1.F;
+        while (isNotWhitespace() && !isEndOfFile())
+        {
+            nexNum = *mData - '0';
+            if (*mData < '0' || *mData > '9')
+                //||
+                //((limit - nexNum) / 10) < num)
+
+            {
+                mData = begin;
+                return false;
+            }
+            afterPoint = afterPoint * 10.F + nexNum;
+            countNulls *= 10.F;
+
+            mData++;
+        }
+        afterPoint /= countNulls;
+
+        num += afterPoint;
+
+        return true;
+    }
 
     bool
     FileReader::readBool(bool& b)
