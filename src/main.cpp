@@ -1,17 +1,18 @@
 #include <iostream>
-#include <vector>
 
 #include "../include/FileReader.h"
 
 int main()
 {
-    tl::FileReader reader("../test.txt");
+    tl::FileReader reader("../test.txt", true);
 
-    int8_t num;
-    if (!reader.readNextInt(num))
-        return 0;
+    std::vector<uint64_t> arr(5);
+    reader.readNumArr(arr);
 
-    std::cout << (int)num;
+    for (auto& i : arr)
+    {
+        std::cout << i << ' ';
+    }
 
     return 0;
 }

@@ -21,33 +21,63 @@
 #include <cstdint>
 
 #include <string>
+#include <vector>
 
 namespace tl
 {
     class FileReader {
     public:
-        explicit FileReader(const char* path, bool ignoreWhitespaces = true);
-        explicit FileReader(const std::string& path, bool ignoreWhitespaces = true);
+        explicit FileReader(const char* path, bool ignoreWhitespaces = false)
+            __attribute__ ((__nonnull__ (2)));
+        explicit FileReader(const std::string& path, bool ignoreWhitespaces = false);
         ~FileReader();
 
         [[nodiscard]] bool isOpen() const;
         [[nodiscard]] bool isEndOfFile() const;
+        void skipWhitespaces();
         void skipChar();
-        bool readChar(char& c);
-        inline bool readNextInt(std::int8_t& num);
-        inline bool readNextInt(std::uint8_t& num);
-        inline bool readNextInt(std::int16_t& num);
-        inline bool readNextInt(std::uint16_t& num);
-        inline bool readNextInt(std::int32_t& num);
-        inline bool readNextInt(std::uint32_t& num);
-        inline bool readNextInt(std::int64_t& num);
-        inline bool readNextInt(std::uint64_t& num);
-        bool readStr(char*& s, std::size_t size);
-        bool readStr(char*& s);
-        bool readStr(std::string& s, std::size_t size);
-        bool readStr(std::string& s);
-        bool readBool(bool& b);
         bool readWhitespace(char& whitespace);
+        bool readChar(char& c);
+        bool readNum(std::int8_t& num);
+        bool readNum(std::uint8_t& num);
+        bool readNum(std::int16_t& num);
+        bool readNum(std::uint16_t& num);
+        bool readNum(std::int32_t& num);
+        bool readNum(std::uint32_t& num);
+        bool readNum(std::int64_t& num);
+        bool readNum(std::uint64_t& num);
+        bool readNum(float& num);
+        bool readNum(double& num);
+        bool readBool(bool& b);
+        bool readStr(char* s,
+                     std::size_t sSize) __attribute__ ((__nonnull__ (2)));
+        bool readStr(char* emptyS) __attribute__ ((__nonnull__ (2)));
+        bool readStr(std::string& s, std::size_t sSize);
+        bool readStr(std::string& s);
+        bool readNumArr(std::int8_t* arr,
+                        std::size_t arrSize) __attribute__ ((__nonnull__ (2)));
+        bool readNumArr(std::uint8_t* arr,
+                        std::size_t arrSize) __attribute__ ((__nonnull__ (2)));
+        bool readNumArr(std::int16_t* arr,
+                        std::size_t arrSize) __attribute__ ((__nonnull__ (2)));
+        bool readNumArr(std::uint16_t* arr,
+                        std::size_t arrSize) __attribute__ ((__nonnull__ (2)));
+        bool readNumArr(std::int32_t* arr,
+                        std::size_t arrSize) __attribute__ ((__nonnull__ (2)));
+        bool readNumArr(std::uint32_t* arr,
+                        std::size_t arrSize) __attribute__ ((__nonnull__ (2)));
+        bool readNumArr(std::int64_t* arr,
+                        std::size_t arrSize) __attribute__ ((__nonnull__ (2)));
+        bool readNumArr(std::uint64_t* arr,
+                        std::size_t arrSize) __attribute__ ((__nonnull__ (2)));
+        bool readNumArr(std::vector<std::int8_t>& arr);
+        bool readNumArr(std::vector<std::uint8_t>& arr);
+        bool readNumArr(std::vector<std::int16_t>& arr);
+        bool readNumArr(std::vector<std::uint16_t>& arr);
+        bool readNumArr(std::vector<std::int32_t>& arr);
+        bool readNumArr(std::vector<std::uint32_t>& arr);
+        bool readNumArr(std::vector<std::int64_t>& arr);
+        bool readNumArr(std::vector<std::uint64_t>& arr);
 
     private:
         char* mData;
@@ -55,11 +85,17 @@ namespace tl
         const bool mIgnoreWhitespaces;
 
         [[nodiscard]] bool isNotWhitespace() const;
-        template<typename Int>
-        [[nodiscard]] bool readIntNum(Int& num, Int limit);
-        template<typename Int>
-        [[nodiscard]] bool readSignedIntNum(Int& num, Int maxSize, Int minSize);
-        static std::size_t charPtrSize(const char* charPtr);
+        template<typename int_t>
+        [[nodiscard]] bool readAbstractInt(int_t& num, int_t limit);
+        template<typename int_t>
+        [[nodiscard]] bool readAbstractSignedInt(int_t& num,
+                                                 int_t maxSize, int_t minSize);
+        template<typename num_t>
+        [[nodiscard]] bool readAbstractNumArr(num_t* arr,
+                                              std::size_t arrSize)
+            __attribute__ ((__nonnull__ (2)));
+        template<typename iterableArrT>
+        [[nodiscard]] bool readAbstractNumArr(iterableArrT& arr);
     };
 }
 
