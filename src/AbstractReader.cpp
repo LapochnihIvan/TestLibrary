@@ -16,8 +16,8 @@ namespace tl
 //                OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 //            const DWORD fSize(GetFileSize(hF, NULL));
 #else
-            const long fSize(::CORRECT_VER(lseek)(fileDir, 0L, SEEK_END));
-            ::CORRECT_VER(lseek)(fileDir, 0L, SEEK_SET);
+            const long fSize(::CORRECT_VER(lseek)(fd, 0L, SEEK_END));
+            ::CORRECT_VER(lseek)(fd, 0L, SEEK_SET);
 #endif
 
             mData = new char[fSize + 1];
