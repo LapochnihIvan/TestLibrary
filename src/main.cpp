@@ -1,17 +1,16 @@
 #include <iostream>
-
-#include "../include/FileReader.h"
+#include "../include/StdinReader.h"
 
 int main()
 {
-    tl::FileReader reader("../test.txt", true);
+    freopen("../test.txt", "r", stdin);
+    tl::StdinReader reader(true);
 
-    std::vector<uint64_t> arr(5);
-    reader.readNumArr(arr);
-
-    for (auto& i : arr)
+    std::vector<float> arr(4);
+    if (reader.readNumArr(arr))
     {
-        std::cout << i << ' ';
+        for (float& i : arr)
+            std::cout << i << ' ';
     }
 
     return 0;
