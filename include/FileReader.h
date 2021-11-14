@@ -8,7 +8,7 @@ namespace tl
     class FileReader : public AbstractReader
     {
     public:
-        explicit FileReader(int fd, bool ignoreWhitespaces);
+        explicit FileReader(int fd, bool ignoreWhitespaces = false);
 
         explicit FileReader(const char *path,
                             bool ignoreWhitespaces = false) __nonnull((2));

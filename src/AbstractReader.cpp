@@ -161,12 +161,19 @@ namespace tl
     bool
     AbstractReader::readBool(bool& b)
     {
-        if (isEndOfFile() || *mData != '0' || *mData != '1')
+        if (isEndOfFile() || (*mData != '0' && *mData != '1'))
         {
             return false;
         }
 
         b = static_cast<bool>(*mData++ - '0');
+
+        if (isNotWhitespace())
+        {
+            mData--;
+
+            return false;
+        }
 
         if (mIgnoreWhitespaces)
         {
@@ -187,14 +194,27 @@ namespace tl
         for (std::size_t pos(UINT64_C(0));
              pos < sSize; pos++)
         {
-            s[pos] = *mData++;
+            if (mIgnoreWhitespaces)
+            {
+                skipWhitespaces();
+            }
+
+            if (!readChar(s[pos]))
+            {
+                return false;
+            }
+        }
+
+        if (mIgnoreWhitespaces)
+        {
+            skipWhitespaces();
         }
 
         return true;
     }
 
     bool
-    AbstractReader::readStr(char* emptyS)
+    AbstractReader::readStr(char*& emptyS)
     {
         if (isEndOfFile())
         {
@@ -206,7 +226,7 @@ namespace tl
         std::size_t pos = 0;
         while (isNotWhitespace() && !isEndOfFile())
         {
-            emptyS[pos++] = *mData++;
+            readChar(emptyS[pos++]);
             if (pos % UINT64_C(2048) == UINT64_C(0))
             {
                 emptyS = static_cast<char *>(
@@ -238,10 +258,25 @@ namespace tl
 
         s.resize(sSize);
 
-        for (std::size_t numSym(UINT64_C(0));
-             numSym < sSize; numSym++)
+        char* begin = mData;
+        for (char& sym : s)
         {
-            s[numSym] = *mData++;
+            if (mIgnoreWhitespaces)
+            {
+                skipWhitespaces();
+            }
+
+            if (!readChar(sym))
+            {
+                mData = begin;
+
+                return false;
+            }
+        }
+
+        if (mIgnoreWhitespaces)
+        {
+            skipWhitespaces();
         }
 
         return true;
@@ -390,7 +425,8 @@ namespace tl
     }
 
     template<typename Num>
-    bool AbstractReader::isNotInRange(const Num& num,
+    bool
+    AbstractReader::isNotInRange(const Num& num,
                                   const Num& nextNum,
                                   const Num& limit)
     {
