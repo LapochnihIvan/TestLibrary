@@ -55,7 +55,7 @@ namespace tl
     void
     AbstractReader::skipWhitespaces()
     {
-        while (!isNotWhitespace() && !isEndOfFile())
+        while (isWhitespace() && !isEndOfFile())
         {
             mData++;
         }
@@ -82,6 +82,12 @@ namespace tl
     }
 
     bool
+    AbstractReader::readWhitespaces(char*& whitespaces)
+    {
+        return readAbstractStr(whitespaces, &AbstractReader::isWhitespace);
+    }
+
+    bool
     AbstractReader::readChar(char& c)
     {
         if (isEndOfFile())
@@ -90,6 +96,11 @@ namespace tl
         }
 
         c = *mData++;
+
+        if (mIgnoreWhitespaces)
+        {
+            skipWhitespaces();
+        }
 
         return true;
     }
@@ -148,12 +159,14 @@ namespace tl
         return   readAbstractInt(num, UINT64_MAX);
     }
 
-    bool AbstractReader::readNum(float& num)
+    bool
+    AbstractReader::readNum(float& num)
     {
         return readAbstractReal(num, 0.F, 0.F);
     }
 
-    bool AbstractReader::readNum(double& num)
+    bool
+    AbstractReader::readNum(double& num)
     {
         return readAbstractReal(num, 0., 0.);
     }
@@ -194,20 +207,10 @@ namespace tl
         for (std::size_t pos(UINT64_C(0));
              pos < sSize; pos++)
         {
-            if (mIgnoreWhitespaces)
-            {
-                skipWhitespaces();
-            }
-
             if (!readChar(s[pos]))
             {
                 return false;
             }
-        }
-
-        if (mIgnoreWhitespaces)
-        {
-            skipWhitespaces();
         }
 
         return true;
@@ -216,36 +219,7 @@ namespace tl
     bool
     AbstractReader::readStr(char*& emptyS)
     {
-        if (isEndOfFile())
-        {
-            return false;
-        }
-
-        emptyS = new char [2048];
-
-        std::size_t pos = 0;
-        while (isNotWhitespace() && !isEndOfFile())
-        {
-            readChar(emptyS[pos++]);
-            if (pos % UINT64_C(2048) == UINT64_C(0))
-            {
-                emptyS = static_cast<char *>(
-                        realloc(static_cast<void*>(emptyS),
-                                pos + UINT64_C(2048)));
-            }
-        }
-
-        emptyS = static_cast<char*>(
-                realloc(static_cast<void*>(emptyS),
-                        pos + UINT64_C(2)));
-        emptyS[pos + UINT64_C(1)] = '\000';
-
-        if (mIgnoreWhitespaces)
-        {
-            skipWhitespaces();
-        }
-
-        return true;
+        return readAbstractStr(emptyS, &AbstractReader::isNotWhitespace);
     }
 
     bool
@@ -354,63 +328,122 @@ namespace tl
     }
 
     bool
-    AbstractReader::readNumArr(std::vector<std::int8_t>& arr)
+    AbstractReader::readNumArrSplitC(std::vector <std::int8_t>& arr, char delim)
     {
-        return readAbstractNumArr(arr);
+        return readAbstractNumArr(arr, delim);
     }
 
     bool
-    AbstractReader::readNumArr(std::vector<std::uint8_t>& arr)
+    AbstractReader::readNumArrSplitC(std::vector <std::uint8_t>& arr, char delim)
     {
-        return readAbstractNumArr(arr);
+        return readAbstractNumArr(arr, delim);
     }
 
     bool
-    AbstractReader::readNumArr(std::vector<std::int16_t>& arr)
+    AbstractReader::readNumArrSplitC(std::vector <std::int16_t>& arr, char delim)
     {
-        return readAbstractNumArr(arr);
+        return readAbstractNumArr(arr, delim);
     }
 
     bool
-    AbstractReader::readNumArr(std::vector<std::uint16_t>& arr)
+    AbstractReader::readNumArrSplitC(std::vector <std::uint16_t>& arr, char delim)
     {
-        return readAbstractNumArr(arr);
+        return readAbstractNumArr(arr, delim);
     }
 
     bool
-    AbstractReader::readNumArr(std::vector<std::int32_t>& arr)
+    AbstractReader::readNumArrSplitC(std::vector <std::int32_t>& arr, char delim)
     {
-        return readAbstractNumArr(arr);
+        return readAbstractNumArr(arr, delim);
     }
 
     bool
-    AbstractReader::readNumArr(std::vector<std::uint32_t>& arr)
+    AbstractReader::readNumArrSplitC(std::vector <std::uint32_t>& arr, char delim)
     {
-        return readAbstractNumArr(arr);
+        return readAbstractNumArr(arr, delim);
+    }
+    bool
+    AbstractReader::readNumArrSplitC(std::vector <std::int64_t>& arr, char delim)
+    {
+        return readAbstractNumArr(arr, delim);
     }
 
     bool
-    AbstractReader::readNumArr(std::vector<std::int64_t>& arr)
+    AbstractReader::readNumArrSplitC(std::vector <std::uint64_t>& arr, char delim)
     {
-        return readAbstractNumArr(arr);
+        return readAbstractNumArr(arr, delim);
     }
 
     bool
-    AbstractReader::readNumArr(std::vector<std::uint64_t>& arr)
+    AbstractReader::readNumArrSplitC(std::vector<float>& arr, char delim)
     {
-        return readAbstractNumArr(arr);
+        return readAbstractNumArr(arr, delim);
     }
 
     bool
-    AbstractReader::readNumArr(std::vector<float>& arr)
+    AbstractReader::readNumArrSplitC(std::vector<double>& arr, char delim)
     {
-        return readAbstractNumArr(arr);
+        return readAbstractNumArr(arr, delim);
     }
 
     bool
-    AbstractReader::readNumArr(std::vector<double>& arr)
+    AbstractReader::readNumArrSplitS(std::vector<std::int8_t>& arr, char* delim)
     {
-        return readAbstractNumArr(arr);
+        return readAbstractNumArr(arr, delim);
+    }
+
+    bool
+    AbstractReader::readNumArrSplitS(std::vector<std::uint8_t>& arr, char* delim)
+    {
+        return readAbstractNumArr(arr, delim);
+    }
+
+    bool
+    AbstractReader::readNumArrSplitS(std::vector<std::int16_t>& arr, char* delim)
+    {
+        return readAbstractNumArr(arr, delim);
+    }
+
+    bool
+    AbstractReader::readNumArrSplitS(std::vector<std::uint16_t>& arr, char* delim)
+    {
+        return readAbstractNumArr(arr, delim);
+    }
+
+    bool
+    AbstractReader::readNumArrSplitS(std::vector<std::int32_t>& arr, char* delim)
+    {
+        return readAbstractNumArr(arr, delim);
+    }
+
+    bool
+    AbstractReader::readNumArrSplitS(std::vector<std::uint32_t>& arr, char* delim)
+    {
+        return readAbstractNumArr(arr, delim);
+    }
+
+    bool
+    AbstractReader::readNumArrSplitS(std::vector<std::int64_t>& arr, char* delim)
+    {
+        return readAbstractNumArr(arr, delim);
+    }
+
+    bool
+    AbstractReader::readNumArrSplitS(std::vector<std::uint64_t>& arr, char* delim)
+    {
+        return readAbstractNumArr(arr, delim);
+    }
+
+    bool
+    AbstractReader::readNumArrSplitS(std::vector<float>& arr, char* delim)
+    {
+        return readAbstractNumArr(arr, delim);
+    }
+
+    bool
+    AbstractReader::readNumArrSplitS(std::vector<double>& arr, char* delim)
+    {
+        return readAbstractNumArr(arr, delim);
     }
 
     bool
@@ -419,7 +452,14 @@ namespace tl
         return *mData != ' ' && *mData != '\n';
     }
 
-    bool AbstractReader::isNotDigit()
+    bool
+    AbstractReader::isWhitespace() const
+    {
+        return *mData == ' ' || *mData == '\n';
+    }
+
+    bool
+    AbstractReader::isNotDigit()
     {
         return *mData < '0' || *mData > '9';
     }
@@ -431,6 +471,42 @@ namespace tl
                                   const Num& limit)
     {
         return ((limit - nextNum) / 10) < num;
+    }
+
+    bool
+    AbstractReader::readAbstractStr(char*& s,
+                                    bool (AbstractReader::*cond)() const)
+    {
+        if (isEndOfFile())
+        {
+            return false;
+        }
+
+        s = new char [2048];
+
+        std::size_t pos = 0;
+        while ((this->*cond)() && !isEndOfFile())
+        {
+            s[pos++] = *mData++;
+            if (pos % UINT64_C(2048) == UINT64_C(0))
+            {
+                s = static_cast<char *>(
+                        realloc(static_cast<void*>(s),
+                                pos + UINT64_C(2048)));
+            }
+        }
+
+        s = static_cast<char*>(
+                realloc(static_cast<void*>(s),
+                        pos + UINT64_C(1)));
+        s[pos] = '\000';
+
+        if (mIgnoreWhitespaces)
+        {
+            skipWhitespaces();
+        }
+
+        return true;
     }
 
     template<typename Int>
@@ -523,7 +599,7 @@ namespace tl
             mData++;
         }
 
-        if (isNotWhitespace())
+        if (isNotWhitespace() && !isEndOfFile())
         {
             if (*mData++ != '.')
             {
@@ -588,8 +664,10 @@ namespace tl
 
     template<typename iterableArrT>
     bool
-    AbstractReader::readAbstractNumArr(iterableArrT& arr)
+    AbstractReader::readAbstractNumArr(iterableArrT& arr, char delim)
     {
+        char* begin = mData;
+
         for (auto& elem : arr)
         {
             if (!readNum(elem))
@@ -597,9 +675,71 @@ namespace tl
                 return false;
             }
 
-            if (!mIgnoreWhitespaces)
+            if (!mIgnoreWhitespaces && !isEndOfFile())
             {
-                skipWhitespaces();
+                if (delim == '\000')
+                {
+                    if (!readWhitespace(delim))
+                    {
+                        mData = begin;
+
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (delim != *mData++ || isWhitespace())
+                    {
+                        mData = begin;
+
+                        return false;
+                    }
+
+                }
+            }
+        }
+
+        return true;
+    }
+
+    template<typename iterableArrT>
+    bool
+    AbstractReader::readAbstractNumArr(iterableArrT& arr, char* delim)
+    {
+        char* begin = mData;
+
+        for (auto& elem : arr)
+        {
+            if (!readNum(elem))
+            {
+                return false;
+            }
+
+            if (!mIgnoreWhitespaces && !isEndOfFile())
+            {
+                if (delim == nullptr)
+                {
+                    if (!readWhitespaces(delim))
+                    {
+                        mData = begin;
+
+                        return false;
+                    }
+                }
+                else
+                {
+                    for (std::size_t numDigitSym(UINT64_C(0));
+                         delim[numDigitSym] != '\000';
+                         numDigitSym++)
+                    {
+                        if (delim[numDigitSym] != *mData++)
+                        {
+                            mData = begin;
+
+                            return false;
+                        }
+                    }
+                }
             }
         }
 

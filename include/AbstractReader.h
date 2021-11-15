@@ -45,6 +45,8 @@ namespace tl
 
         bool readWhitespace(char& whitespace);
 
+        bool readWhitespaces(char*& whitespaces);
+
         bool readChar(char& c);
 
         bool readNum(std::int8_t& num);
@@ -110,25 +112,65 @@ namespace tl
                         std::size_t arrSize)
             __nonnull((2));
 
-        bool readNumArr(std::vector <std::int8_t>& arr);
+        bool readNumArrSplitC(std::vector <std::int8_t>& arr,
+                        char delim = '\000');
 
-        bool readNumArr(std::vector <std::uint8_t>& arr);
+        bool readNumArrSplitC(std::vector <std::uint8_t>& arr,
+                        char delim = '\000');
 
-        bool readNumArr(std::vector <std::int16_t>& arr);
+        bool readNumArrSplitC(std::vector <std::int16_t>& arr,
+                        char delim = '\000');
 
-        bool readNumArr(std::vector <std::uint16_t>& arr);
+        bool readNumArrSplitC(std::vector <std::uint16_t>& arr,
+                        char delim = '\000');
 
-        bool readNumArr(std::vector <std::int32_t>& arr);
+        bool readNumArrSplitC(std::vector <std::int32_t>& arr,
+                        char delim = '\000');
 
-        bool readNumArr(std::vector <std::uint32_t>& arr);
+        bool readNumArrSplitC(std::vector <std::uint32_t>& arr,
+                        char delim = '\000');
 
-        bool readNumArr(std::vector <std::int64_t>& arr);
+        bool readNumArrSplitC(std::vector <std::int64_t>& arr,
+                        char delim = '\000');
 
-        bool readNumArr(std::vector <std::uint64_t>& arr);
+        bool readNumArrSplitC(std::vector <std::uint64_t>& arr,
+                        char delim = '\000');
 
-        bool readNumArr(std::vector<float>& arr);
+        bool readNumArrSplitC(std::vector<float>& arr,
+                        char delim = '\000');
 
-        bool readNumArr(std::vector<double>& arr);
+        bool readNumArrSplitC(std::vector<double>& arr,
+                        char delim = '\000');
+
+        bool readNumArrSplitS(std::vector <std::int8_t>& arr,
+                        char* delim = nullptr);
+
+        bool readNumArrSplitS(std::vector <std::uint8_t>& arr,
+                        char* delim = nullptr);
+
+        bool readNumArrSplitS(std::vector <std::int16_t>& arr,
+                        char* delim = nullptr);
+
+        bool readNumArrSplitS(std::vector <std::uint16_t>& arr,
+                        char* delim = nullptr);
+
+        bool readNumArrSplitS(std::vector <std::int32_t>& arr,
+                        char* delim = nullptr);
+
+        bool readNumArrSplitS(std::vector <std::uint32_t>& arr,
+                        char* delim = nullptr);
+
+        bool readNumArrSplitS(std::vector <std::int64_t>& arr,
+                        char* delim = nullptr);
+
+        bool readNumArrSplitS(std::vector <std::uint64_t>& arr,
+                        char* delim = nullptr);
+
+        bool readNumArrSplitS(std::vector<float>& arr,
+                        char* delim = nullptr);
+
+        bool readNumArrSplitS(std::vector<double>& arr,
+                        char* delim = nullptr);
 
     private:
         char* mData;
@@ -137,12 +179,17 @@ namespace tl
 
         [[nodiscard]] inline bool isNotWhitespace() const;
 
+        [[nodiscard]] inline bool isWhitespace() const;
+
         [[nodiscard]] inline bool isNotDigit();
 
         template<typename Num>
         [[nodiscard]] inline bool isNotInRange(const Num& num,
                                                const Num& nextNum,
                                                const Num& limit);
+
+        [[nodiscard]] inline bool readAbstractStr(char*& s,
+                                                  bool (AbstractReader::*cond)() const);
 
         template<typename Int>
         [[nodiscard]] inline bool readAbstractInt(Int& num, Int limit);
@@ -163,7 +210,12 @@ namespace tl
             __nonnull((2));
 
         template<typename iterableArrT>
-        [[nodiscard]] inline bool readAbstractNumArr(iterableArrT& arr);
+        [[nodiscard]] inline bool readAbstractNumArr(iterableArrT& arr,
+                                                     char delim);
+
+        template<typename iterableArrT>
+        [[nodiscard]] inline bool readAbstractNumArr(iterableArrT& arr,
+                                                     char* delim);
     };
 }
 
