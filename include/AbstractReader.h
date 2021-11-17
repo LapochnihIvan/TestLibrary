@@ -1,6 +1,8 @@
 #ifndef TESTLIBRARY_ABSTRACTREADER_H
 #define TESTLIBRARY_ABSTRACTREADER_H
 
+#include "TestLibraySecure.h"
+
 #ifdef __GNUC__
 #   include <unistd.h>
 
@@ -8,14 +10,11 @@
 
 #   define CORRECT_VER(func) func
 #elif _MSC_VER
-#   define _CRT_SECURE_NO_WARNINGS
-
 #   include <io.h>
 
 //#   include <Windows.h>
 
 #   define CORRECT_VER(func) _ ## func
-#   define __nonnull(params)
 #endif
 
 #include <fcntl.h>
@@ -35,7 +34,7 @@ namespace tl
 
         ~AbstractReader();
 
-        [[nodiscard]] bool isOpen() const;
+//        [[nodiscard]] bool isOpen() const;
 
         [[nodiscard]] bool isEndOfFile() const;
 

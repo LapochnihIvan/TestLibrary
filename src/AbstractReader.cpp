@@ -5,34 +5,31 @@ namespace tl
     AbstractReader::AbstractReader(const int fd, const bool ignoreWhitespaces) :
             mIgnoreWhitespaces(ignoreWhitespaces)
     {
-        if (fd != -1)
-        {
+        TESTLIBRARY_ASSERT(fd != -1, "file doesn't exist");
+        TESTLIBRARY_ASSERT(fd != 1,
+                           "FileReader doesn't work with stdout");
+        TESTLIBRARY_ASSERT(fd != 2,
+                           "FileReader doesn't work with stderr");
+
 #ifdef __GNUC__
-            struct ::stat file{};
-            ::fstat(fd, &file);
-            const ::off_t fSize(file.st_size);
+        struct ::stat file{};
+        ::fstat(fd, &file);
+        const ::off_t fSize(file.st_size);
 //#elif _MSC_VER
-//            HANDLE hF = CreateFileA("F:\\TestLib\\TestLib\\test.exe", 0x00, 0x00, NULL,
-//                OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-//            const DWORD fSize(GetFileSize(hF, NULL));
+//      HANDLE hF = CreateFileA("F:\\TestLib\\TestLib\\test.exe", 0x00, 0x00, NULL,
+//            OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+//      const DWORD fSize(GetFileSize(hF, NULL));
 #else
-            const long fSize(::CORRECT_VER(lseek)(fd, 0L, SEEK_END));
-            ::CORRECT_VER(lseek)(fd, 0L, SEEK_SET);
+        const long fSize(::CORRECT_VER(lseek)(fd, 0L, SEEK_END));
+        ::CORRECT_VER(lseek)(fd, 0L, SEEK_SET);
 #endif
 
-            mData = new char[fSize + 1];
-            mData[fSize] = '\000';
+        mData = new char[fSize + 1];
+        mData[fSize] = '\000';
 
-            ::CORRECT_VER(read)(fd, mData, fSize);
-            ::CORRECT_VER(close)(fd);
-
-            mBegin = mData;
-        }
-        else
-        {
-            mData = nullptr;
-            mBegin = nullptr;
-        }
+        ::CORRECT_VER(read)(fd, mData, fSize);
+        ::CORRECT_VER(close)(fd);
+        mBegin = mData;
     }
 
     AbstractReader::~AbstractReader()
@@ -40,11 +37,11 @@ namespace tl
         delete[] mBegin;
     }
 
-    bool
-    AbstractReader::isOpen() const
-    {
-        return mData == nullptr;
-    }
+//    bool
+//    AbstractReader::isOpen() const
+//    {
+//        return mData != nullptr;
+//    }
 
     bool
     AbstractReader::isEndOfFile() const
@@ -199,6 +196,8 @@ namespace tl
     bool
     AbstractReader::readStr(char* s, const std::size_t sSize)
     {
+        TESTLIBRARY_NONNULL_ASSERT(s);
+
         if (isEndOfFile())
         {
             return false;
@@ -645,6 +644,8 @@ namespace tl
     bool
     AbstractReader::readAbstractNumArr(Num* arr, const std::size_t arrSize)
     {
+        TESTLIBRARY_NONNULL_ASSERT(arr);
+
         for (std::size_t numElem(UINT64_C(0));
              numElem < arrSize; numElem++)
         {
