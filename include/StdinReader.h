@@ -9,6 +9,9 @@ namespace tl
     {
     public:
         explicit StdinReader(bool ignoreWhitespaces = false);
+
+    private:
+        using AbstractReader::open;
     };
 }
 

@@ -24,17 +24,23 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 
 namespace tl
 {
+    using hugeInt = std::string;
+    using hugeIntPtr = char*;
+
     class AbstractReader
     {
     public:
-        explicit AbstractReader(int fd, bool ignoreWhitespaces = false);
-
         ~AbstractReader();
 
-//        [[nodiscard]] bool isOpen() const;
+        void open(int fd);
+
+        void changeMode();
+
+        [[nodiscard]] bool isOpen() const;
 
         [[nodiscard]] bool isEndOfFile() const;
 
@@ -45,6 +51,8 @@ namespace tl
         bool readWhitespace(char& whitespace);
 
         bool readWhitespaces(char*& whitespaces);
+
+        bool readWhitespaces(std::string& whitespaces);
 
         bool readChar(char& c);
 
@@ -63,6 +71,10 @@ namespace tl
         bool readNum(std::int64_t& num);
 
         bool readNum(std::uint64_t& num);
+
+        bool readHugeInt(hugeIntPtr& num);
+
+        bool readHugeInt(hugeInt& num);
 
         bool readNum(float& num);
 
@@ -171,10 +183,14 @@ namespace tl
         bool readNumArrSplitS(std::vector<double>& arr,
                         char* delim = nullptr);
 
+    protected:
+        explicit AbstractReader(bool ignoreWhitespaces = false);
+        explicit AbstractReader(int fd, bool ignoreWhitespaces = false);
+
     private:
         char* mData;
         char* mBegin;
-        const bool mIgnoreWhitespaces;
+        bool mIgnoreWhitespaces;
 
         [[nodiscard]] inline bool isNotWhitespace() const;
 
@@ -188,7 +204,16 @@ namespace tl
                                                const Num& limit);
 
         [[nodiscard]] inline bool readAbstractStr(char*& s,
-                                                  bool (AbstractReader::*cond)() const);
+                                                  bool (AbstractReader::*continueCond)() const,
+                                                  const std::function<bool()>& exitExit = [](){
+                                                      return false;
+                                                  });
+
+        [[nodiscard]] inline bool readAbstractStr(std::string& s,
+                                                  bool (AbstractReader::*continueCond)() const,
+                                                  const std::function<bool()>& exitExit = [](){
+                                                      return false;
+                                                  });
 
         template<typename Int>
         [[nodiscard]] inline bool readAbstractInt(Int& num, Int limit);

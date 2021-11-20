@@ -2,8 +2,8 @@
 
 namespace tl
 {
-    AbstractReader::AbstractReader(const int fd, const bool ignoreWhitespaces) :
-            mIgnoreWhitespaces(ignoreWhitespaces)
+    void
+    AbstractReader::open(const int fd)
     {
         TESTLIBRARY_ASSERT(fd != -1, "file doesn't exist");
         TESTLIBRARY_ASSERT(fd != 1,
@@ -32,16 +32,21 @@ namespace tl
         mBegin = mData;
     }
 
+    void AbstractReader::changeMode()
+    {
+        mIgnoreWhitespaces = !mIgnoreWhitespaces;
+    }
+
     AbstractReader::~AbstractReader()
     {
         delete[] mBegin;
     }
 
-//    bool
-//    AbstractReader::isOpen() const
-//    {
-//        return mData != nullptr;
-//    }
+    bool
+    AbstractReader::isOpen() const
+    {
+        return mData != nullptr;
+    }
 
     bool
     AbstractReader::isEndOfFile() const
@@ -85,6 +90,12 @@ namespace tl
     }
 
     bool
+    AbstractReader::readWhitespaces(std::string& whitespaces)
+    {
+        return readAbstractStr(whitespaces, &AbstractReader::isWhitespace);
+    }
+
+    bool
     AbstractReader::readChar(char& c)
     {
         if (isEndOfFile())
@@ -105,55 +116,75 @@ namespace tl
     bool
     AbstractReader::readNum(std::int8_t& num)
     {
-        return  readAbstractSignedInt(num,
-                                      static_cast<std::int8_t>(INT8_MAX),
-                                      static_cast<std::int8_t>(INT8_MIN));
+        return readAbstractSignedInt(num,
+                                     static_cast<std::int8_t>(INT8_MAX),
+                                     static_cast<std::int8_t>(INT8_MIN));
     }
 
     bool
     AbstractReader::readNum(std::uint8_t& num)
     {
-        return   readAbstractInt(num,
-                                 static_cast<std::uint8_t>(UINT8_MAX));
+        return readAbstractInt(num,
+                               static_cast<std::uint8_t>(UINT8_MAX));
     }
 
     bool
     AbstractReader::readNum(std::int16_t& num)
     {
-        return  readAbstractSignedInt(num,
-                                      static_cast<std::int16_t>(INT16_MAX),
-                                      static_cast<std::int16_t>(INT16_MIN));
+        return readAbstractSignedInt(num,
+                                     static_cast<std::int16_t>(INT16_MAX),
+                                     static_cast<std::int16_t>(INT16_MIN));
     }
 
     bool
     AbstractReader::readNum(std::uint16_t& num)
     {
-        return   readAbstractInt(num,
-                                 static_cast<std::uint16_t>(UINT16_MAX));
+        return readAbstractInt(num,
+                               static_cast<std::uint16_t>(UINT16_MAX));
     }
 
     bool
     AbstractReader::readNum(std::int32_t &num)
     {
-        return  readAbstractSignedInt(num, INT32_MAX, INT32_MAX);
+        return readAbstractSignedInt(num, INT32_MAX, INT32_MAX);
     }
 
     bool
     AbstractReader::readNum(std::uint32_t& num)
     {
-        return   readAbstractInt(num, UINT32_MAX);
+        return readAbstractInt(num, UINT32_MAX);
     }
 
     bool
     AbstractReader::readNum(std::int64_t& num)
     {
-        return  readAbstractSignedInt(num, INT64_MAX, INT64_MIN);
+        return readAbstractSignedInt(num, INT64_MAX, INT64_MIN);
     }
 
     bool
     AbstractReader::readNum(std::uint64_t& num)
     {
-        return   readAbstractInt(num, UINT64_MAX);
+        return readAbstractInt(num, UINT64_MAX);
+    }
+
+    bool
+    AbstractReader::readHugeInt(hugeIntPtr& num)
+    {
+        return readAbstractStr(num, &AbstractReader::isNotWhitespace,
+                               [this]()
+                                {
+                                    return isNotDigit();
+                                });
+    }
+
+    bool
+    AbstractReader::readHugeInt(hugeInt& num)
+    {
+        return readAbstractStr(num, &AbstractReader::isNotWhitespace,
+                               [this]()
+                               {
+                                   return isNotDigit();
+                               });
     }
 
     bool
@@ -258,24 +289,7 @@ namespace tl
     bool
     AbstractReader::readStr(std::string& s)
     {
-        s.clear();
-
-        if (isEndOfFile())
-        {
-            return false;
-        }
-
-        while (isNotWhitespace() && !isEndOfFile())
-        {
-            s.push_back(*mData++);
-        }
-
-        if (mIgnoreWhitespaces)
-        {
-            skipWhitespaces();
-        }
-
-        return true;
+        return readAbstractStr(s, &AbstractReader::isNotWhitespace);
     }
 
     bool
@@ -445,6 +459,20 @@ namespace tl
         return readAbstractNumArr(arr, delim);
     }
 
+    AbstractReader::AbstractReader(const bool ignoreWhitespaces) :
+            mIgnoreWhitespaces(ignoreWhitespaces),
+            mData(nullptr),
+            mBegin(nullptr)
+    {
+
+    }
+
+    AbstractReader::AbstractReader(const int fd, const bool ignoreWhitespaces) :
+            AbstractReader(ignoreWhitespaces)
+    {
+        open(fd);
+    }
+
     bool
     AbstractReader::isNotWhitespace() const
     {
@@ -472,26 +500,41 @@ namespace tl
         return ((limit - nextNum) / 10) < num;
     }
 
+#define BUFF_SIZE UINT64_C(256)
+
     bool
     AbstractReader::readAbstractStr(char*& s,
-                                    bool (AbstractReader::*cond)() const)
+                                    bool (AbstractReader::*continueCond)() const,
+                                    const std::function<bool()>& exitCond)
     {
-        if (isEndOfFile())
+        if (isEndOfFile() || !(this->*continueCond)())
         {
+            s = nullptr;
+
             return false;
         }
 
-        s = new char [2048];
+        s = new char [BUFF_SIZE];
 
         std::size_t pos = 0;
-        while ((this->*cond)() && !isEndOfFile())
+        while ((this->*continueCond)() && !isEndOfFile())
         {
-            s[pos++] = *mData++;
-            if (pos % UINT64_C(2048) == UINT64_C(0))
+            if (exitCond())
             {
-                s = static_cast<char *>(
+                s = static_cast<char*>(
                         realloc(static_cast<void*>(s),
-                                pos + UINT64_C(2048)));
+                                pos + UINT64_C(1)));
+                s[pos] = '\000';
+
+                return false;
+            }
+
+            s[pos++] = *mData++;
+            if (pos % BUFF_SIZE == UINT64_C(0))
+            {
+                s = static_cast<char*>(
+                        realloc(static_cast<void*>(s),
+                                pos + BUFF_SIZE));
             }
         }
 
@@ -499,6 +542,36 @@ namespace tl
                 realloc(static_cast<void*>(s),
                         pos + UINT64_C(1)));
         s[pos] = '\000';
+
+        if (mIgnoreWhitespaces)
+        {
+            skipWhitespaces();
+        }
+
+        return true;
+    }
+
+    bool
+    AbstractReader::readAbstractStr(std::string& s,
+                                    bool (AbstractReader::*continueCond)() const,
+                                    const std::function<bool()>& exitCond)
+    {
+        s.clear();
+
+        if (isEndOfFile())
+        {
+            return false;
+        }
+
+        while ((this->*continueCond)() && !isEndOfFile())
+        {
+            if (exitCond())
+            {
+                return false;
+            }
+
+            s.push_back(*mData++);
+        }
 
         if (mIgnoreWhitespaces)
         {
