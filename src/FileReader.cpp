@@ -1,24 +1,30 @@
 #include "../include/FileReader.h"
 
 namespace tl {
+    FileReader::FileReader(const bool ignoreWhitespaces) :
+            AbstractFileReader(ignoreWhitespaces)
+    {
+
+    }
+
     FileReader::FileReader(const int fd, const bool ignoreWhitespaces) :
-            AbstractReader(ignoreWhitespaces)
+            AbstractFileReader(ignoreWhitespaces)
     {
         TESTLIBRARY_ASSERT(fd != 0,
                            "FileReader doesn't work with stdin");
 
-        AbstractReader::open(fd);
+        AbstractFileReader::open(fd);
     }
 
     FileReader::FileReader(FILE*& file, const bool ignoreWhitespaces) :
-            AbstractReader(ignoreWhitespaces)
+            AbstractFileReader(ignoreWhitespaces)
     {
         open(file);
     }
 
     FileReader::FileReader(const char *path,
                            const bool ignoreWhitespaces) :
-            AbstractReader(ignoreWhitespaces)
+            AbstractFileReader(ignoreWhitespaces)
     {
         open(path);
     }
@@ -35,7 +41,7 @@ namespace tl {
     {
         TESTLIBRARY_NONNULL_ASSERT(file);
 
-        AbstractReader::open(::fileno(file));
+        AbstractFileReader::open(::fileno(file));
     }
 
     void
@@ -43,7 +49,7 @@ namespace tl {
     {
         TESTLIBRARY_NONNULL_ASSERT(path);
 
-        AbstractReader::open(::CORRECT_VER(open)(path,
+        AbstractFileReader::open(::CORRECT_VER(open)(path,
                              CORRECT_VER(O_RDONLY)));
     }
 

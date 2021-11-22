@@ -1,16 +1,15 @@
 #ifndef TESTLIBRARY_STANDARDREADERS_H
 #define TESTLIBRARY_STANDARDREADERS_H
 
-#include "FileReader.h"
-#include "StdinReader.h"
+#include "PartOfStdinReader.h"
 
 namespace tl
 {
     struct StandardReaders
     {
-        static FileReader input;
-        static FileReader output;
-        static StdinReader ans;
+        static PartOfStdinReader input;
+        static PartOfStdinReader output;
+        static PartOfStdinReader ans;
     };
 }
 

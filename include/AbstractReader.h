@@ -19,8 +19,8 @@
 
 #include <fcntl.h>
 
-#include <cstdint>
 #include <cmath>
+#include <cfloat>
 
 #include <string>
 #include <vector>
@@ -36,8 +36,6 @@ namespace tl
     public:
         ~AbstractReader();
 
-        void open(int fd);
-
         void changeMode();
 
         [[nodiscard]] bool isOpen() const;
@@ -47,6 +45,8 @@ namespace tl
         void skipWhitespaces();
 
         void skipChar();
+
+        void readAllFile(char* fileStr);
 
         bool readWhitespace(char& whitespace);
 
@@ -184,12 +184,12 @@ namespace tl
                         char* delim = nullptr);
 
     protected:
-        explicit AbstractReader(bool ignoreWhitespaces = false);
-        explicit AbstractReader(int fd, bool ignoreWhitespaces = false);
-
-    private:
         char* mData;
         char* mBegin;
+
+        explicit AbstractReader(bool ignoreWhitespaces = false);
+
+    private:
         bool mIgnoreWhitespaces;
 
         [[nodiscard]] inline bool isNotWhitespace() const;

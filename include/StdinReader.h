@@ -1,17 +1,17 @@
 #ifndef TESTLIBRARY_STDINREADER_H
 #define TESTLIBRARY_STDINREADER_H
 
-#include "AbstractReader.h"
+#include "AbstractFileReader.h"
 
 namespace tl
 {
-    class StdinReader : public AbstractReader
+    class StdinReader : public AbstractFileReader
     {
     public:
         explicit StdinReader(bool ignoreWhitespaces = false);
 
     private:
-        using AbstractReader::open;
+        using AbstractFileReader::open;
     };
 }
 

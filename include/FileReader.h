@@ -1,13 +1,14 @@
 #ifndef TESTLIBRARY_FILEREADER_H
 #define TESTLIBRARY_FILEREADER_H
 
-#include "AbstractReader.h"
+#include "AbstractFileReader.h"
 
 namespace tl
 {
-    class FileReader : public AbstractReader
+    class FileReader : public AbstractFileReader
     {
     public:
+        explicit FileReader(bool ignoreWhitespaces = false);
         explicit FileReader(int fd, bool ignoreWhitespaces = false);
 
         explicit FileReader(FILE*& file, bool ignoreWhitespaces = false);

@@ -2,36 +2,6 @@
 
 namespace tl
 {
-    void
-    AbstractReader::open(const int fd)
-    {
-        TESTLIBRARY_ASSERT(fd != -1, "file doesn't exist");
-        TESTLIBRARY_ASSERT(fd != 1,
-                           "FileReader doesn't work with stdout");
-        TESTLIBRARY_ASSERT(fd != 2,
-                           "FileReader doesn't work with stderr");
-
-#ifdef __GNUC__
-        struct ::stat file{};
-        ::fstat(fd, &file);
-        const ::off_t fSize(file.st_size);
-//#elif _MSC_VER
-//      HANDLE hF = CreateFileA("F:\\TestLib\\TestLib\\test.exe", 0x00, 0x00, NULL,
-//            OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-//      const DWORD fSize(GetFileSize(hF, NULL));
-#else
-        const long fSize(::CORRECT_VER(lseek)(fd, 0L, SEEK_END));
-        ::CORRECT_VER(lseek)(fd, 0L, SEEK_SET);
-#endif
-
-        mData = new char[fSize + 1];
-        mData[fSize] = '\000';
-
-        ::CORRECT_VER(read)(fd, mData, fSize);
-        ::CORRECT_VER(close)(fd);
-        mBegin = mData;
-    }
-
     void AbstractReader::changeMode()
     {
         mIgnoreWhitespaces = !mIgnoreWhitespaces;
@@ -72,8 +42,14 @@ namespace tl
         }
     }
 
+    void
+    AbstractReader::readAllFile(char* fileStr)
+    {
+        fileStr = mBegin;
+    }
+
     bool
-    AbstractReader::readWhitespace(char &whitespace)
+    AbstractReader::readWhitespace(char& whitespace)
     {
         if (isNotWhitespace())
         {
@@ -190,13 +166,13 @@ namespace tl
     bool
     AbstractReader::readNum(float& num)
     {
-        return readAbstractReal(num, 0.F, 0.F);
+        return readAbstractReal(num, FLT_MAX, FLT_MIN);
     }
 
     bool
     AbstractReader::readNum(double& num)
     {
-        return readAbstractReal(num, 0., 0.);
+        return readAbstractReal(num, DBL_MAX, DBL_MIN);
     }
 
     bool
@@ -467,12 +443,6 @@ namespace tl
 
     }
 
-    AbstractReader::AbstractReader(const int fd, const bool ignoreWhitespaces) :
-            AbstractReader(ignoreWhitespaces)
-    {
-        open(fd);
-    }
-
     bool
     AbstractReader::isNotWhitespace() const
     {
@@ -627,7 +597,7 @@ namespace tl
             mData++;
         }
 
-        if(!readAbstractInt(num, minus ? minSize : maxSize))
+        if (!readAbstractInt(num, minus ? minSize : maxSize))
         {
             return false;
         }
@@ -649,6 +619,15 @@ namespace tl
             return false;
         }
 
+        bool minus = false;
+        if (*mData == '-')
+        {
+            minus = true;
+            mData++;
+        }
+
+        double limit = minus ? minSize : maxSize;
+
         num = 0.F;
 
         char* begin(mData);
@@ -657,10 +636,8 @@ namespace tl
                && !isEndOfFile())
         {
             nexNum = static_cast<Real>(*mData - '0');
-            if (isNotDigit())
-                //||
-                //((limit - nexNum) / 10) < num)
-
+            if (isNotDigit()
+                || ((limit - nexNum) / 10) < num)
             {
                 mData = begin;
 
@@ -687,11 +664,9 @@ namespace tl
             {
                 nexNum = static_cast<Real>(*mData - '0');
                 if (isNotDigit())
-                    //||
-                    //((limit - nexNum) / 10) < num)
-
                 {
                     mData = begin;
+
                     return false;
                 }
                 afterPoint = afterPoint * 10.F + nexNum;
@@ -702,7 +677,19 @@ namespace tl
 
             afterPoint /= std::pow(10.F, countDigit);
 
+            if (((limit - afterPoint) / 10) < num)
+            {
+                mData = begin;
+
+                return false;
+            }
+
             num += afterPoint;
+        }
+
+        if (minus)
+        {
+            num *= -1.F;
         }
 
         if (mIgnoreWhitespaces)

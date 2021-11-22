@@ -2,7 +2,7 @@
 
 namespace tl
 {
-    FileReader StandardReaders::input("../input/inf.txt");
-    FileReader StandardReaders::output("../input/ouf.txt");
-    StdinReader StandardReaders::ans;
+    PartOfStdinReader StandardReaders::input;
+    PartOfStdinReader StandardReaders::output;
+    PartOfStdinReader StandardReaders::ans;
 }
