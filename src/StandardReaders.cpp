@@ -2,7 +2,7 @@
 
 namespace tl
 {
-    PartOfStdinReader StandardReaders::input;
-    PartOfStdinReader StandardReaders::output;
-    PartOfStdinReader StandardReaders::ans;
+    PartOfStdinReader StandardReaders::input(true);
+    PartOfStdinReader StandardReaders::output(true);
+    PartOfStdinReader StandardReaders::ans(true);
 }

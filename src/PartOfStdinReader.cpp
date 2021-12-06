@@ -7,7 +7,7 @@ namespace tl
     {
         union
         {
-            char buff[8];
+            u_char buff[8];
             std::uint64_t num;
         } sizeOfPart{};
 
@@ -16,6 +16,8 @@ namespace tl
         mData = new char[sizeOfPart.num + 1];
         mData[sizeOfPart.num] = '\000';
         ::CORRECT_VER(read(0, mData, sizeOfPart.num));
+
+        write(1, mData, sizeOfPart.num + 1);
 
         mBegin = mData;
     }

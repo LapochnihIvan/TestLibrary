@@ -9,7 +9,7 @@
 #   include <sys/stat.h>
 
 #   define CORRECT_VER(func) func
-#elif _MSC_VER
+#elif defined(_MSC_VER)
 #   include <io.h>
 
 //#   include <Windows.h>
@@ -46,7 +46,7 @@ namespace tl
 
         void skipChar();
 
-        void readAllFile(char* fileStr);
+        void readAllFile(char*& fileStr);
 
         bool readWhitespace(char& whitespace);
 
@@ -72,6 +72,38 @@ namespace tl
 
         bool readNum(std::uint64_t& num);
 
+        bool readInt8(std::int8_t& i);
+
+        bool readUInt8(std::uint8_t& i);
+
+        bool readInt16(std::int16_t& i);
+
+        bool readUInt16(std::uint16_t& i);
+
+        bool readInt32(std::int32_t& i);
+
+        bool readUInt32(std::uint32_t& i);
+
+        bool readInt64(std::int64_t& i);
+
+        bool readUInt64(std::uint64_t& i);
+
+        bool readShort(short& s);
+
+        bool readUShort(unsigned short& s);
+
+        bool readInt(int& i);
+
+        bool readUInt(unsigned int& i);
+
+        bool readLong(long& l);
+
+        bool readULong(unsigned long& l);
+
+        bool readLongLong(long long& ll);
+
+        bool readULongLong(unsigned long long& ll);
+
         bool readHugeInt(hugeIntPtr& num);
 
         bool readHugeInt(hugeInt& num);
@@ -91,97 +123,145 @@ namespace tl
 
         bool readStr(std::string& s);
 
-        bool readNumArr(std::int8_t* arr,
-                        std::size_t arrSize)
+        bool readInt8ArrSplitC(std::int8_t* arr,
+                              std::size_t arrSize,
+                              char delim = '\000')
             __nonnull((2));
 
-        bool readNumArr(std::uint8_t* arr,
-                        std::size_t arrSize)
+        bool readUInt8ArrSplitC(std::uint8_t* arr,
+                              std::size_t arrSize,
+                              char delim = '\000')
             __nonnull((2));
 
-        bool readNumArr(std::int16_t* arr,
-                        std::size_t arrSize)
+        bool readInt16ArrSplitC(std::int16_t* arr,
+                              std::size_t arrSize,
+                              char delim = '\000')
             __nonnull((2));
 
-        bool readNumArr(std::uint16_t* arr,
-                        std::size_t arrSize)
+        bool readUInt16ArrSplitC(std::uint16_t* arr,
+                              std::size_t arrSize,
+                              char delim = '\000')
             __nonnull((2));
 
-        bool readNumArr(std::int32_t* arr,
-                        std::size_t arrSize)
+        bool readIntArrSplitC(std::int32_t* arr,
+                              std::size_t arrSize,
+                              char delim = '\000')
             __nonnull((2));
 
-        bool readNumArr(std::uint32_t* arr,
-                        std::size_t arrSize)
+        bool readUIntArrSplitC(std::uint32_t* arr,
+                              std::size_t arrSize,
+                              char delim = '\000')
             __nonnull((2));
 
-        bool readNumArr(std::int64_t* arr,
-                        std::size_t arrSize)
+        bool readInt64ArrSplitC(std::int64_t* arr,
+                              std::size_t arrSize,
+                              char delim = '\000')
             __nonnull((2));
 
-        bool readNumArr(std::uint64_t* arr,
-                        std::size_t arrSize)
+        bool readUInt64ArrSplitC(std::uint64_t* arr,
+                              std::size_t arrSize,
+                              char delim = '\000')
             __nonnull((2));
 
-        bool readNumArrSplitC(std::vector <std::int8_t>& arr,
-                        char delim = '\000');
+        bool readInt8ArrSplitS(std::int8_t* arr,
+                              std::size_t arrSize,
+                              char* delim = nullptr)
+            __nonnull((2));
 
-        bool readNumArrSplitC(std::vector <std::uint8_t>& arr,
-                        char delim = '\000');
+        bool readUInt8ArrSplitS(std::uint8_t* arr,
+                              std::size_t arrSize,
+                              char* delim = nullptr)
+            __nonnull((2));
 
-        bool readNumArrSplitC(std::vector <std::int16_t>& arr,
-                        char delim = '\000');
+        bool readInt16ArrSplitS(std::int16_t* arr,
+                              std::size_t arrSize,
+                              char* delim = nullptr)
+            __nonnull((2));
 
-        bool readNumArrSplitC(std::vector <std::uint16_t>& arr,
-                        char delim = '\000');
+        bool readUInt16ArrSplitS(std::uint16_t* arr,
+                              std::size_t arrSize,
+                              char* delim = nullptr)
+            __nonnull((2));
 
-        bool readNumArrSplitC(std::vector <std::int32_t>& arr,
-                        char delim = '\000');
+        bool readIntArrSplitS(std::int32_t* arr,
+                              std::size_t arrSize,
+                              char* delim = nullptr)
+            __nonnull((2));
 
-        bool readNumArrSplitC(std::vector <std::uint32_t>& arr,
-                        char delim = '\000');
+        bool readUIntArrSplitS(std::uint32_t* arr,
+                              std::size_t arrSize,
+                              char* delim = nullptr)
+            __nonnull((2));
 
-        bool readNumArrSplitC(std::vector <std::int64_t>& arr,
-                        char delim = '\000');
+        bool readInt64ArrSplitS(std::int64_t* arr,
+                              std::size_t arrSize,
+                              char* delim = nullptr)
+            __nonnull((2));
 
-        bool readNumArrSplitC(std::vector <std::uint64_t>& arr,
-                        char delim = '\000');
+        bool readUInt64ArrSplitS(std::uint64_t* arr,
+                              std::size_t arrSize,
+                              char* delim = nullptr)
+            __nonnull((2));
 
-        bool readNumArrSplitC(std::vector<float>& arr,
-                        char delim = '\000');
+        bool readInt8ArrSplitC(std::vector <std::int8_t>& arr,
+                              char delim = '\000');
 
-        bool readNumArrSplitC(std::vector<double>& arr,
-                        char delim = '\000');
+        bool readUInt8ArrSplitC(std::vector <std::uint8_t>& arr,
+                              char delim = '\000');
 
-        bool readNumArrSplitS(std::vector <std::int8_t>& arr,
-                        char* delim = nullptr);
+        bool readInt16ArrSplitC(std::vector <std::int16_t>& arr,
+                              char delim = '\000');
 
-        bool readNumArrSplitS(std::vector <std::uint8_t>& arr,
-                        char* delim = nullptr);
+        bool readUInt16ArrSplitC(std::vector <std::uint16_t>& arr,
+                              char delim = '\000');
 
-        bool readNumArrSplitS(std::vector <std::int16_t>& arr,
-                        char* delim = nullptr);
+        bool readIntArrSplitC(std::vector <std::int32_t>& arr,
+                              char delim = '\000');
 
-        bool readNumArrSplitS(std::vector <std::uint16_t>& arr,
-                        char* delim = nullptr);
+        bool readUIntArrSplitC(std::vector <std::uint32_t>& arr,
+                              char delim = '\000');
 
-        bool readNumArrSplitS(std::vector <std::int32_t>& arr,
-                        char* delim = nullptr);
+        bool readInt64ArrSplitC(std::vector <std::int64_t>& arr,
+                              char delim = '\000');
 
-        bool readNumArrSplitS(std::vector <std::uint32_t>& arr,
-                        char* delim = nullptr);
+        bool readUInt64ArrSplitC(std::vector <std::uint64_t>& arr,
+                              char delim = '\000');
 
-        bool readNumArrSplitS(std::vector <std::int64_t>& arr,
-                        char* delim = nullptr);
+        bool readFltArrSplitC(std::vector<float>& arr,
+                              char delim = '\000');
 
-        bool readNumArrSplitS(std::vector <std::uint64_t>& arr,
-                        char* delim = nullptr);
+        bool readDblArrSplitC(std::vector<double>& arr,
+                              char delim = '\000');
 
-        bool readNumArrSplitS(std::vector<float>& arr,
-                        char* delim = nullptr);
+        bool readInt8ArrSplitS(std::vector <std::int8_t>& arr,
+                              char* delim = nullptr);
 
-        bool readNumArrSplitS(std::vector<double>& arr,
-                        char* delim = nullptr);
+        bool readUInt8ArrSplitS(std::vector <std::uint8_t>& arr,
+                              char* delim = nullptr);
+
+        bool readInt16ArrSplitS(std::vector <std::int16_t>& arr,
+                              char* delim = nullptr);
+
+        bool readUInt16ArrSplitS(std::vector <std::uint16_t>& arr,
+                              char* delim = nullptr);
+
+        bool readIntArrSplitS(std::vector <std::int32_t>& arr,
+                              char* delim = nullptr);
+
+        bool readUIntArrSplitS(std::vector <std::uint32_t>& arr,
+                              char* delim = nullptr);
+
+        bool readInt64ArrSplitS(std::vector <std::int64_t>& arr,
+                              char* delim = nullptr);
+
+        bool readUInt64ArrSplitS(std::vector <std::uint64_t>& arr,
+                              char* delim = nullptr);
+
+        bool readFltArrSplitS(std::vector<float>& arr,
+                              char* delim = nullptr);
+
+        bool readDblArrSplitS(std::vector<double>& arr,
+                              char* delim = nullptr);
 
     protected:
         char* mData;
@@ -230,7 +310,14 @@ namespace tl
 
         template<typename Num>
         [[nodiscard]] inline bool readAbstractNumArr(Num* arr,
-                                                     std::size_t arrSize)
+                                                     std::size_t arrSize,
+                                                     char delim)
+            __nonnull((2));
+
+        template<typename Num>
+        [[nodiscard]] inline bool readAbstractNumArr(Num* arr,
+                                                     std::size_t arrSize,
+                                                     char* delim)
             __nonnull((2));
 
         template<typename iterableArrT>
