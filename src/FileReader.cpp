@@ -41,7 +41,7 @@ namespace tl {
     {
         TESTLIBRARY_NONNULL_ASSERT(file);
 
-        AbstractFileReader::open(::fileno(file));
+        AbstractFileReader::open(::CORRECT_VER(fileno)(file));
     }
 
     void
