@@ -50,9 +50,6 @@
 //}
 
 #include "../include/StringTools.h"
-
-FILE* file(freopen("../input/input", "r", stdin));
-
 #include "../include/StandardReaders.h"
 
 int main()
