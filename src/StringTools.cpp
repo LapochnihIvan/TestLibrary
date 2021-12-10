@@ -16,7 +16,7 @@ namespace tl
         }
     }
 
-    char* StringTools::englishEnding(int num)
+    const char* StringTools::englishEnding(int num)
     {
         if (num / 10 == 1)
         {
