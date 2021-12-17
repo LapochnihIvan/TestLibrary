@@ -6,9 +6,13 @@ namespace tl
 {
     class AbstractPartOfFileReader : public AbstractReader
     {
-    public:
+    protected:
+        explicit AbstractPartOfFileReader(bool ignoreWhitespaces = false);
+
         explicit AbstractPartOfFileReader(int fd,
                                           bool ignoreWhitespaces = false);
+
+        void openPart(int fd);
     };
 }
 

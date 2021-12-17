@@ -10,7 +10,7 @@ namespace tl
     public:
         static std::string partOfStr(std::string str);
 
-        static const char* englishEnding(int num);
+        static char* withEnglishEnding(int num);
     };
 }
 

@@ -9,7 +9,7 @@ namespace tl
     }
 
     AbstractFileReader::AbstractFileReader(const int fd,
-                                               const bool ignoreWhitespaces) :
+                                           const bool ignoreWhitespaces) :
             AbstractReader(ignoreWhitespaces)
     {
         open(fd);
@@ -40,7 +40,7 @@ namespace tl
         mData = new char[fSize + 1];
         mData[fSize] = '\000';
 
-        ::CORRECT_VER(read)(fd, mData, fSize);
+        ::CORRECT_VER(read)(fd, static_cast<void*>(mData), fSize);
         ::CORRECT_VER(close)(fd);
         mBegin = mData;
     }

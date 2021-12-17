@@ -1,7 +1,7 @@
 #ifndef TESTLIBRARY_ABSTRACTREADER_H
 #define TESTLIBRARY_ABSTRACTREADER_H
 
-#include "TestLibraySecure.h"
+#include "TestLibrarySecure.h"
 
 #ifdef __GNUC__
 #   include <unistd.h>
@@ -285,13 +285,13 @@ namespace tl
 
         [[nodiscard]] inline bool readAbstractStr(char*& s,
                                                   bool (AbstractReader::*continueCond)() const,
-                                                  const std::function<bool()>& exitExit = [](){
+                                                  const std::function<bool()>& exitCond = [](){
                                                       return false;
                                                   });
 
         [[nodiscard]] inline bool readAbstractStr(std::string& s,
                                                   bool (AbstractReader::*continueCond)() const,
-                                                  const std::function<bool()>& exitExit = [](){
+                                                  const std::function<bool()>& exitCond = [](){
                                                       return false;
                                                   });
 

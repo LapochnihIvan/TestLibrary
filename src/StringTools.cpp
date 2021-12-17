@@ -1,3 +1,4 @@
+#include <cstring>
 #include "../include/StringTools.h"
 
 namespace tl
@@ -16,23 +17,31 @@ namespace tl
         }
     }
 
-    const char* StringTools::englishEnding(int num)
+    char* StringTools::withEnglishEnding(int num)
     {
+        int resultSize = num / 10 + 4;
+        char* result = new char[resultSize];
+        result[resultSize - 1] = '\000';
+        std::sprintf(result, "%d", num);
+
         if (num / 10 == 1)
         {
-            return "th";
+            std::strncat(result, "th", 3);
         }
-
-        switch (num % 10)
+        else
         {
-            case 1:
-                return "st";
-            case 2:
-                return "nd";
-            case 3:
-                return "rd";
+            switch (num % 10) {
+                case 1:
+                    std::strncat(result, "st", 3);
+                case 2:
+                    std::strncat(result, "nd", 3);
+                case 3:
+                    std::strncat(result, "rd", 3);
+                default:
+                    std::strncat(result, "th", 3);
+            }
         }
 
-        return "th";
+        return result;
     }
 }
