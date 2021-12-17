@@ -16,9 +16,8 @@ int main()
         tl::StandardReaders::output.readInt64(pNum);
         if (jNum != pNum)
             std::printf(
-                "%d%s numbers differ - expected: '%ld', found: '%ld'",
-                n,
-                tl::StringTools::englishEnding(n),
+                "%s numbers differ - expected: '%ld', found: '%ld'",
+                tl::StringTools::withEnglishEnding(n),
                 jNum,
                 pNum);
         else if (n <= 5)
@@ -52,14 +51,16 @@ int main()
     if (extraInAnsCount > 0)
     {
         std::printf(
-                "Answer contains longer sequence [length = %d], but output contains %d elements",
+                "Answer contains longer sequence [length = %d],"
+                " but output contains %d elements",
                 n + extraInAnsCount, n);
     }
 
     if (extraInOufCount > 0)
     {
         std::printf(
-                "Output contains longer sequence [length = %d], but answer contains %d elements",
+                "Output contains longer sequence [length = %d],"
+                " but answer contains %d elements",
                 n + extraInOufCount, n);
     }
 
