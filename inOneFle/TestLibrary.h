@@ -521,9 +521,9 @@ namespace tl
 {
     struct StandardReaders
     {
-        static PartOfFileReader input;
-        static PartOfFileReader output;
-        static PartOfFileReader ans;
+        static PartOfStdinReader input;
+        static PartOfStdinReader output;
+        static PartOfStdinReader ans;
     };
 }
 
@@ -1890,12 +1890,9 @@ namespace tl
 
 namespace tl
 {
-    PartOfFileReader StandardReaders::input("../input/input",
-                                            true);
-    PartOfFileReader StandardReaders::output(nullptr,
-                                             true);
-    PartOfFileReader StandardReaders::ans(nullptr,
-                                          true);
+    PartOfStdinReader StandardReaders::input(true);
+    PartOfStdinReader StandardReaders::output(true);
+    PartOfStdinReader StandardReaders::ans(true);
 }
 
 #include <cstring>
