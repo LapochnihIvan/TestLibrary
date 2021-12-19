@@ -1,5 +1,4 @@
-#include "../include/StringTools.h"
-#include "../include/StandardReaders.h"
+#include "../inOneFle/TestLibrary.h"
 
 int main()
 {

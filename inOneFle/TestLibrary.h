@@ -1915,28 +1915,30 @@ namespace tl
 
     char* StringTools::withEnglishEnding(int num)
     {
-        char sNum[num / 10 + 4];
-        std::sprintf(sNum, "%d", num);
+        int resultSize = num / 10 + 4;
+        char* result = new char[resultSize];
+        result[resultSize - 1] = '\000';
+        std::sprintf(result, "%d", num);
 
         if (num / 10 == 1)
         {
-            return std::strncat(sNum, "th", sizeof(sNum) + 3);
+            std::strncat(result, "th", 3);
         }
-
-        switch (num % 10)
+        else
         {
-            case 1:
-                return std::strncat(sNum, "st",
-                                    sizeof(sNum) + 3);
-            case 2:
-                return std::strncat(sNum, "nd",
-                                    sizeof(sNum) + 3);
-            case 3:
-                return std::strncat(sNum, "rd",
-                                    sizeof(sNum) + 3);
+            switch (num % 10) {
+                case 1:
+                    std::strncat(result, "st", 3);
+                case 2:
+                    std::strncat(result, "nd", 3);
+                case 3:
+                    std::strncat(result, "rd", 3);
+                default:
+                    std::strncat(result, "th", 3);
+            }
         }
 
-        return std::strncat(sNum, "th", sizeof(sNum) + 3);
+        return result;
     }
 }
 
