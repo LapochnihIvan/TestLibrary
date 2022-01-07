@@ -1723,6 +1723,7 @@ namespace tl
         ::CORRECT_VER(read)(fd, static_cast<void*>(&lastFourBites), 4);
         TESTLIBRARY_ASSERT(lastFourBites != 0, "You can't read so long file in Windows");
 #endif
+
         mData = new char[sizeOfPart + 1];
         mData[sizeOfPart] = '\000';
         ::CORRECT_VER(read)(fd, static_cast<void*>(mData), sizeOfPart);
