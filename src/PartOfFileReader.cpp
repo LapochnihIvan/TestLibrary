@@ -41,7 +41,8 @@ namespace tl
         open(path);
     }
 
-    void PartOfFileReader::open(const int fd)
+    void
+    PartOfFileReader::open(const int fd)
     {
         PartOfFileReader::mFd = fd;
 

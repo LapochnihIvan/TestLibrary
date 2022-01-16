@@ -664,13 +664,13 @@ namespace tl
     bool
     AbstractReader::isNotWhitespace() const
     {
-        return *mData != ' ' && *mData != '\n';
+        return *mData != ' ' && *mData != '\n' && *mData != '\r';
     }
 
     bool
     AbstractReader::isWhitespace() const
     {
-        return *mData == ' ' || *mData == '\n';
+        return !isNotWhitespace();
     }
 
     bool
