@@ -24,7 +24,7 @@
 #    elif _MSC_VER
 #        define TESTLIBRARY_ASSERT(expression, message)						\
          if (!(expression))                                                 \
-             _wassert(L ## message, __FILEW__,                            \
+             _wassert(L ## message, __FILEW__,                              \
                      static_cast<unsigned>(__LINE__))
 #   endif
 #   define TESTLIBRARY_NONNULL_ASSERT(ptr)                                  \
