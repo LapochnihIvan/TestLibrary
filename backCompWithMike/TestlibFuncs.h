@@ -5,6 +5,7 @@
 #include <string>
 
 #include "../include/StandardReaders.h"
+#include "../include/StringTools.h"
 
 namespace tl::bc
 {
@@ -58,6 +59,10 @@ namespace tl::bc
 
     void quitf(TResult result, const char *format, ...);
 
+    inline std::string englishEnding(int x);
+
+    inline std::string compress(const std::string &s);
+
 
     template<typename T>
     static inline T __testlib_abs(const T &x)
@@ -75,6 +80,12 @@ namespace tl::bc
     static inline T __testlib_max(const T& a, const T& b)
     {
         return a > b ? a : b;
+    }
+
+    template<typename T>
+    static std::string vtos(const T &t)
+    {
+        return std::to_string(t);
     }
 }
 

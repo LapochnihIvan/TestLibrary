@@ -106,4 +106,30 @@ namespace tl::bc
         std::vprintf(format, ap);
         va_end(ap);
     }
+
+    inline std::string englishEnding(int x)
+    {
+        if (x / 10 == 1)
+        {
+            return "th";
+        }
+        else
+        {
+            switch (x % 10) {
+                case 1:
+                    return "st";
+                case 2:
+                    return "nd";
+                case 3:
+                    return "rd";
+                default:
+                    return "th";
+            }
+        }
+    }
+
+    inline std::string compress(const std::string &s)
+    {
+        return tl::StringTools::partOfStr(s);
+    }
 }

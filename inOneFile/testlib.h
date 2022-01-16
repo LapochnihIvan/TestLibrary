@@ -715,6 +715,10 @@ namespace tl::bc
 
     void quitf(TResult result, const char *format, ...);
 
+    inline std::string englishEnding(int x);
+
+    inline std::string compress(const std::string &s);
+
 
     template<typename T>
     static inline T __testlib_abs(const T &x)
@@ -732,6 +736,12 @@ namespace tl::bc
     static inline T __testlib_max(const T& a, const T& b)
     {
         return a > b ? a : b;
+    }
+
+    template<typename T>
+    static std::string vtos(const T &t)
+    {
+        return std::to_string(t);
     }
 }
 
@@ -2465,6 +2475,32 @@ namespace tl::bc
         va_start(ap, format);
         std::vprintf(format, ap);
         va_end(ap);
+    }
+
+    inline std::string englishEnding(int x)
+    {
+        if (x / 10 == 1)
+        {
+            return "th";
+        }
+        else
+        {
+            switch (x % 10) {
+                case 1:
+                    return "st";
+                case 2:
+                    return "nd";
+                case 3:
+                    return "rd";
+                default:
+                    return "th";
+            }
+        }
+    }
+
+    inline std::string compress(const std::string &s)
+    {
+        return tl::StringTools::partOfStr(s);
     }
 }
 
