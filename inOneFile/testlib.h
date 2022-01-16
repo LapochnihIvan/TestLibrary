@@ -1,3 +1,7 @@
+#ifdef PART_OF_FILE_STD_READERS
+#	define PART_OF_FILE_READER_ADD
+#endif
+
 #ifndef TESTLIBRARY_TESTLIBRARYSECURE_H
 #define TESTLIBRARY_TESTLIBRARYSECURE_H
 
@@ -24,7 +28,7 @@
 #    elif _MSC_VER
 #        define TESTLIBRARY_ASSERT(expression, message)						\
          if (!(expression))                                                 \
-             _wassert(L ## message, __FILEW__,                            \
+             _wassert(L ## message, __FILEW__,                              \
                      static_cast<unsigned>(__LINE__))
 #   endif
 #   define TESTLIBRARY_NONNULL_ASSERT(ptr)                                  \
@@ -32,7 +36,6 @@
 #endif
 
 #endif //TESTLIBRARY_TESTLIBRARYSECURE_H
-
 
 #ifndef TESTLIBRARY_ABSTRACTREADER_H
 #define TESTLIBRARY_ABSTRACTREADER_H
@@ -367,6 +370,24 @@ namespace tl
 
 #endif //TESTLIBRARY_ABSTRACTREADER_H
 
+#ifndef TESTLIBRARY_ABSTRACTPARTOFFILEREADER_H
+#define TESTLIBRARY_ABSTRACTPARTOFFILEREADER_H
+
+namespace tl
+{
+    class AbstractPartOfFileReader : public AbstractReader
+    {
+    protected:
+        explicit AbstractPartOfFileReader(bool ignoreWhitespaces = false);
+
+        explicit AbstractPartOfFileReader(int fd,
+                                          bool ignoreWhitespaces = false);
+
+        void openPart(int fd);
+    };
+}
+
+#endif //TESTLIBRARY_ABSTRACTPARTOFFILEREADER_H
 
 #ifndef TESTLIBRARY_ABSTRACTFILEREADER_H
 #define TESTLIBRARY_ABSTRACTFILEREADER_H
@@ -388,76 +409,6 @@ namespace tl
 
 #endif //TESTLIBRARY_ABSTRACTFILEREADER_H
 
-
-#ifndef TESTLIBRARY_ABSTRACTPARTOFFILEREADER_H
-#define TESTLIBRARY_ABSTRACTPARTOFFILEREADER_H
-
-namespace tl
-{
-    class AbstractPartOfFileReader : public AbstractReader
-    {
-    protected:
-        explicit AbstractPartOfFileReader(bool ignoreWhitespaces = false);
-
-        explicit AbstractPartOfFileReader(int fd,
-                                          bool ignoreWhitespaces = false);
-
-        void openPart(int fd);
-    };
-}
-
-#endif //TESTLIBRARY_ABSTRACTPARTOFFILEREADER_H
-
-
-#ifndef TESTLIBRARY_STDINREADER_H
-#define TESTLIBRARY_STDINREADER_H
-
-
-namespace tl
-{
-    class StdinReader : public AbstractFileReader
-    {
-    public:
-        explicit StdinReader(bool ignoreWhitespaces = false);
-
-    private:
-        using AbstractFileReader::open;
-    };
-}
-
-#endif //TESTLIBRARY_STDINREADER_H
-
-
-#ifndef TESTLIBRARY_FILEREADER_H
-#define TESTLIBRARY_FILEREADER_H
-
-
-namespace tl
-{
-    class FileReader : public AbstractFileReader
-    {
-    public:
-        explicit FileReader(bool ignoreWhitespaces = false);
-        explicit FileReader(int fd, bool ignoreWhitespaces = false);
-
-        explicit FileReader(FILE*& file, bool ignoreWhitespaces = false);
-
-        explicit FileReader(const char* path,
-                            bool ignoreWhitespaces = false) __nonnull((2));
-
-        explicit FileReader(const std::string& path, bool ignoreWhitespaces = false);
-
-        void open(FILE*& file);
-
-        void open(const char* path) __nonnull((2));
-
-        void open(const std::string& path);
-    };
-}
-
-#endif //TESTLIBRARY_FILEREADER_H
-
-
 #ifndef TESTLIBRARY_PARTOFSTDINREADER_H
 #define TESTLIBRARY_PARTOFSTDINREADER_H
 
@@ -473,7 +424,7 @@ namespace tl
 
 #endif //TESTLIBRARY_PARTOFSTDINREADER_H
 
-
+#ifdef PART_OF_FILE_READER_ADD
 #ifndef TESTLIBRARY_PARTOFFILEREADER_H
 #define TESTLIBRARY_PARTOFFILEREADER_H
 
@@ -511,43 +462,84 @@ namespace tl
 }
 
 #endif //TESTLIBRARY_PARTOFFILEREADER_H
+#endif
 
+#ifndef TESTLIBRARY_STDINREADER_H
+#define TESTLIBRARY_STDINREADER_H
+
+
+namespace tl
+{
+    class StdinReader : public AbstractFileReader
+    {
+    public:
+        explicit StdinReader(bool ignoreWhitespaces = false);
+
+    private:
+        using AbstractFileReader::open;
+    };
+}
+
+#endif //TESTLIBRARY_STDINREADER_H
+
+#ifndef TESTLIBRARY_FILEREADER_H
+#define TESTLIBRARY_FILEREADER_H
+
+
+namespace tl
+{
+    class FileReader : public AbstractFileReader
+    {
+    public:
+        explicit FileReader(bool ignoreWhitespaces = false);
+        explicit FileReader(int fd, bool ignoreWhitespaces = false);
+
+        explicit FileReader(FILE*& file, bool ignoreWhitespaces = false);
+
+        explicit FileReader(const char* path,
+                            bool ignoreWhitespaces = false) __nonnull((2));
+
+        explicit FileReader(const std::string& path, bool ignoreWhitespaces = false);
+
+        void open(FILE*& file);
+
+        void open(const char* path) __nonnull((2));
+
+        void open(const std::string& path);
+    };
+}
+
+#endif //TESTLIBRARY_FILEREADER_H
 
 #ifndef TESTLIBRARY_STANDARDREADERS_H
 #define TESTLIBRARY_STANDARDREADERS_H
 
+#ifdef PART_OF_FILE_STD_READERS
+#elif defined(FILE_STD_READERS)
+#else
+#endif
 
 namespace tl
 {
     struct StandardReaders
     {
+#ifdef PART_OF_FILE_STD_READERS
+        static PartOfFileReader input;
+        static PartOfFileReader output;
+        static PartOfFileReader ans;
+#elif defined(FILE_STD_READERS)
+        static FileReader input;
+        static FileReader output;
+        static FileReader ans;
+#else
         static PartOfStdinReader input;
         static PartOfStdinReader output;
         static PartOfStdinReader ans;
+#endif
     };
 }
 
 #endif //TESTLIBRARY_STANDARDREADERS_H
-
-
-#ifndef TESTLIBRARY_STRINGTOOLS_H
-#define TESTLIBRARY_STRINGTOOLS_H
-
-#include <string>
-
-namespace tl
-{
-    class StringTools
-    {
-    public:
-        static std::string partOfStr(std::string str);
-
-        static char* withEnglishEnding(int num);
-    };
-}
-
-#endif //TESTLIBRARY_STRINGTOOLS_H
-
 
 #ifndef TESTLIBRARY_COMPARES_H
 #define TESTLIBRARY_COMPARES_H
@@ -567,7 +559,232 @@ namespace tl
 
 #endif //TESTLIBRARY_COMPARES_H
 
+#ifndef TESTLIBRARY_STRINGTOOLS_H
+#define TESTLIBRARY_STRINGTOOLS_H
 
+#include <cstring>
+
+#include <string>
+
+namespace tl
+{
+    class StringTools
+    {
+    public:
+        static std::string partOfStr(std::string str);
+
+        static char* withEnglishEnding(std::uint8_t num);
+
+        static char* withEnglishEnding(std::uint16_t num);
+
+        static char* withEnglishEnding(std::uint32_t num);
+
+        static char* withEnglishEnding(std::uint64_t num);
+
+        static char* withEnglishEnding(std::int8_t num);
+
+        static char* withEnglishEnding(std::int16_t num);
+
+        static char* withEnglishEnding(std::int32_t num);
+
+        static char* withEnglishEnding(std::int64_t num);
+
+    private:
+        template<typename Int>
+        static char* withEnglishEnding(Int num,
+                                       const char* format,
+                                       Int beginSize = 0);
+    };
+}
+
+#endif //TESTLIBRARY_STRINGTOOLS_H
+
+#ifndef WITHOUT_BACK_COMP
+#ifndef TESTLIBRARY_INSTREAM_H
+#define TESTLIBRARY_INSTREAM_H
+
+
+namespace tl::bc {
+    class InStream {
+    public:
+        InStream(tl::AbstractReader &reader);
+
+        bool seekEof();
+
+        void readWordTo(std::string &result);
+
+        void readTokenTo(std::string &result);
+
+        void readStringTo(std::string &result);
+
+        std::string readWord();
+
+        std::string readToken();
+
+        std::string readString();
+
+        int readInteger();
+
+        int readInt();
+
+        long long readLong();
+
+        double readReal();
+
+        double readDouble();
+
+    private:
+        tl::AbstractReader &mReader;
+    };
+}
+
+
+#endif //TESTLIBRARY_INSTREAM_H
+
+#ifndef TESTLIBRARY_TESTLIBGLOBALS_H
+#define TESTLIBRARY_TESTLIBGLOBALS_H
+
+
+namespace tl::bc
+{
+    InStream inf(tl::StandardReaders::input);
+
+    InStream ouf(tl::StandardReaders::output);
+
+    InStream ans(tl::StandardReaders::ans);
+}
+
+#endif //TESTLIBRARY_TESTLIBGLOBALS_H
+
+#ifndef TESTLIBRARY_TESTLIBFUNCS_H
+#define TESTLIBRARY_TESTLIBFUNCS_H
+
+#include <stdarg.h>
+#include <string>
+
+
+namespace tl::bc
+{
+    void setTestCase(int testCase);
+
+    void unsetTestCase();
+
+    [[noreturn]] static void __testlib_fail(const std::string &message);
+
+    static bool __testlib_prelimIsNaN(double r);
+
+    static std::string removeDoubleTrailingZeroes(std::string value);
+
+    std::string format(const char* fmt, ...);
+
+    std::string format(const std::string fmt, ...);
+
+    static std::string __testlib_part(const std::string& s);
+
+    static bool __testlib_isNaN(double r);
+
+    static double __testlib_nan();
+
+    static bool __testlib_isInfinite(double r);
+
+    inline bool doubleCompare(double expected, double result,
+                              double MAX_DOUBLE_ERROR);
+
+    inline double doubleDelta(double expected, double result);
+
+    static void __testlib_set_binary(std::FILE *file);
+
+    void prepareOpts(int argc, char* argv[]);
+
+
+    void registerTestlibCmd(int argc, char *argv[]);
+
+    void setName(const char *format, ...);
+
+    enum TResult
+    {
+        _ok = 0,
+        _wa = 1,
+        _pe = 2,
+        _fail = 3,
+        _dirt = 4,
+        _points = 5,
+        _unexpected_eof = 8,
+        _partially = 16
+    };
+
+    void quitf(TResult result, const char *format, ...);
+
+
+    template<typename T>
+    static inline T __testlib_abs(const T &x)
+    {
+        return x > 0 ? x : -x;
+    }
+
+    template<typename T>
+    static inline T __testlib_min(const T& a, const T& b)
+    {
+        return a < b ? a : b;
+    }
+
+    template<typename T>
+    static inline T __testlib_max(const T& a, const T& b)
+    {
+        return a > b ? a : b;
+    }
+}
+
+#endif //TESTLIBRARY_TESTLIBFUNCS_H
+
+#ifndef TESTLIBRARY_RANDOM_T_H
+#define TESTLIBRARY_RANDOM_T_H
+
+class pattern;
+
+namespace tl::bc
+{
+    class random_t {
+    public:
+    };
+}
+
+#endif //TESTLIBRARY_RANDOM_T_H
+
+#ifndef TESTLIBRARY_PATTERN_H
+#define TESTLIBRARY_PATTERN_H
+
+#include <string>
+#include <vector>
+
+
+namespace tl::bc
+{
+class pattern
+{
+    public:
+        pattern(std::string s);
+
+        std::string next(random_t& rnd) const;
+
+        bool matches(const std::string& s) const;
+
+        std::string src() const;
+
+    private:
+        bool matches(const std::string& s, size_t pos) const;
+
+        std::string s;
+        std::vector<pattern> children;
+        std::vector<char> chars;
+        int from;
+        int to;
+    };
+}
+
+#endif //TESTLIBRARY_PATTERN_H
+
+#endif
 
 namespace tl
 {
@@ -1233,13 +1450,13 @@ namespace tl
     bool
     AbstractReader::isNotWhitespace() const
     {
-        return *mData != ' ' && *mData != '\n';
+        return *mData != ' ' && *mData != '\n' && *mData != '\r';
     }
 
     bool
     AbstractReader::isWhitespace() const
     {
-        return *mData == ' ' || *mData == '\n';
+        return !isNotWhitespace();
     }
 
     bool
@@ -1642,6 +1859,50 @@ namespace tl
     }
 }
 
+namespace tl
+{
+    AbstractPartOfFileReader::AbstractPartOfFileReader(const bool ignoreWhitespaces) :
+            AbstractReader(ignoreWhitespaces)
+    {
+
+    }
+
+    AbstractPartOfFileReader::AbstractPartOfFileReader(const int fd,
+                                                       const bool ignoreWhitespaces) :
+            AbstractReader(ignoreWhitespaces)
+    {
+        openPart(fd);
+    }
+
+    void
+    AbstractPartOfFileReader::openPart(const int fd)
+    {
+        TESTLIBRARY_ASSERT(fd != -1, "file doesn't exist");
+        TESTLIBRARY_ASSERT(fd != 1,
+                           "PartOfFileReader doesn't work with stdout");
+        TESTLIBRARY_ASSERT(fd != 2,
+                           "PartOfFileReader doesn't work with stderr");
+
+        std::size_t sizeOfPart;
+
+#ifdef __GNUC__
+        ::CORRECT_VER(read)(fd, static_cast<void*>(&sizeOfPart), 8);
+#elif defined(_MSC_VER)
+        ::CORRECT_VER(read)(fd, static_cast<void*>(&sizeOfPart), 4);
+
+        std::size_t lastFourBites;
+        ::CORRECT_VER(read)(fd, static_cast<void*>(&lastFourBites), 4);
+        TESTLIBRARY_ASSERT(lastFourBites == 0, "You can't read so long file in Windows");
+#endif
+
+        mData = new char[sizeOfPart + 1];
+        mData[sizeOfPart] = '\000';
+        ::CORRECT_VER(read)(fd, static_cast<void*>(mData), sizeOfPart);
+
+        mBegin = mData;
+    }
+}
+
 
 namespace tl
 {
@@ -1677,7 +1938,7 @@ namespace tl
 //      const DWORD fSize(GetFileSize(hF, NULL));
 #else
         const long fSize(::CORRECT_VER(lseek)(fd, 0L, SEEK_END));
-            ::CORRECT_VER(lseek)(fd, 0L, SEEK_SET);
+        ::CORRECT_VER(lseek)(fd, 0L, SEEK_SET);
 #endif
 
         mData = new char[fSize + 1];
@@ -1686,119 +1947,6 @@ namespace tl
         ::CORRECT_VER(read)(fd, static_cast<void*>(mData), fSize);
         ::CORRECT_VER(close)(fd);
         mBegin = mData;
-    }
-}
-
-namespace tl
-{
-    AbstractPartOfFileReader::AbstractPartOfFileReader(const bool ignoreWhitespaces) :
-            AbstractReader(ignoreWhitespaces)
-    {
-
-    }
-
-    AbstractPartOfFileReader::AbstractPartOfFileReader(const int fd,
-                                                       const bool ignoreWhitespaces) :
-            AbstractReader(ignoreWhitespaces)
-    {
-        openPart(fd);
-    }
-
-    void AbstractPartOfFileReader::openPart(const int fd)
-    {
-        TESTLIBRARY_ASSERT(fd != -1, "file doesn't exist");
-        TESTLIBRARY_ASSERT(fd != 1,
-                           "PartOfFileReader doesn't work with stdout");
-        TESTLIBRARY_ASSERT(fd != 2,
-                           "PartOfFileReader doesn't work with stderr");
-
-        std::size_t sizeOfPart;
-
-#ifdef __GNUC__
-        ::CORRECT_VER(read)(fd, static_cast<void*>(&sizeOfPart), 8);
-#elif defined(_MSC_VER)
-        ::CORRECT_VER(read)(fd, static_cast<void*>(&sizeOfPart), 4);
-
-        std::size_t lastFourBites
-        ::CORRECT_VER(read)(fd, static_cast<void*>(&lastFourBites), 4);
-        TESTLIBRARY_ASSERT(lastFourBites != 0, "You can't read so long file in Windows");
-#endif
-
-        mData = new char[sizeOfPart + 1];
-        mData[sizeOfPart] = '\000';
-        ::CORRECT_VER(read)(fd, static_cast<void*>(mData), sizeOfPart);
-
-        mBegin = mData;
-    }
-}
-
-
-tl::StdinReader::StdinReader(const bool ignoreWhitespaces) :
-        AbstractFileReader(0, ignoreWhitespaces)
-{
-
-}
-
-
-namespace tl {
-    FileReader::FileReader(const bool ignoreWhitespaces) :
-            AbstractFileReader(ignoreWhitespaces)
-    {
-
-    }
-
-    FileReader::FileReader(const int fd, const bool ignoreWhitespaces) :
-            AbstractFileReader(ignoreWhitespaces)
-    {
-        TESTLIBRARY_ASSERT(fd != 0,
-                           "FileReader doesn't work with stdin");
-
-        AbstractFileReader::open(fd);
-    }
-
-    FileReader::FileReader(FILE*& file, const bool ignoreWhitespaces) :
-            AbstractFileReader(ignoreWhitespaces)
-    {
-        open(file);
-    }
-
-    FileReader::FileReader(const char* path,
-                           const bool ignoreWhitespaces) :
-            AbstractFileReader(ignoreWhitespaces)
-    {
-        open(path);
-    }
-
-    FileReader::FileReader(const std::string& path,
-                           const bool ignoreWhitespaces) :
-            FileReader(ignoreWhitespaces)
-    {
-        open(path);
-    }
-
-    void
-    FileReader::open(FILE*& file)
-    {
-        TESTLIBRARY_NONNULL_ASSERT(file);
-
-        AbstractFileReader::open(::CORRECT_VER(fileno)(file));
-    }
-
-    void
-    FileReader::open(const char* path)
-    {
-        TESTLIBRARY_NONNULL_ASSERT(path);
-
-        AbstractFileReader::open(::CORRECT_VER(open)(path,
-                             CORRECT_VER(O_RDONLY)));
-    }
-
-    void
-    FileReader::open(const std::string& path)
-    {
-        TESTLIBRARY_ASSERT(!path.empty(), "path is empty");
-
-        open(path.c_str());
     }
 }
 
@@ -1812,6 +1960,7 @@ namespace tl
     }
 }
 
+#ifdef PART_OF_FILE_READER_ADD
 
 namespace tl
 {
@@ -1854,7 +2003,8 @@ namespace tl
         open(path);
     }
 
-    void PartOfFileReader::open(const int fd)
+    void
+    PartOfFileReader::open(const int fd)
     {
         PartOfFileReader::mFd = fd;
 
@@ -1894,60 +2044,94 @@ namespace tl
         open(path.c_str());
     }
 }
+#endif
+
+
+tl::StdinReader::StdinReader(const bool ignoreWhitespaces) :
+        AbstractFileReader(0, ignoreWhitespaces)
+{
+
+}
+
+
+namespace tl {
+    FileReader::FileReader(const bool ignoreWhitespaces) :
+            AbstractFileReader(ignoreWhitespaces)
+    {
+
+    }
+
+    FileReader::FileReader(const int fd, const bool ignoreWhitespaces) :
+            AbstractFileReader(ignoreWhitespaces)
+    {
+        TESTLIBRARY_ASSERT(fd != 0,
+                           "FileReader doesn't work with stdin");
+
+        AbstractFileReader::open(fd);
+    }
+
+    FileReader::FileReader(FILE*& file, const bool ignoreWhitespaces) :
+            AbstractFileReader(ignoreWhitespaces)
+    {
+        open(file);
+    }
+
+    FileReader::FileReader(const char *path,
+                           const bool ignoreWhitespaces) :
+            AbstractFileReader(ignoreWhitespaces)
+    {
+        open(path);
+    }
+
+    FileReader::FileReader(const std::string &path,
+                           const bool ignoreWhitespaces) :
+            FileReader(path.c_str(), ignoreWhitespaces)
+    {
+        open(path);
+    }
+
+    void
+    FileReader::open(FILE*& file)
+    {
+        TESTLIBRARY_NONNULL_ASSERT(file);
+
+        AbstractFileReader::open(::CORRECT_VER(fileno)(file));
+    }
+
+    void
+    FileReader::open(const char* path)
+    {
+        TESTLIBRARY_NONNULL_ASSERT(path);
+
+        AbstractFileReader::open(::CORRECT_VER(open)(path,
+                             CORRECT_VER(O_RDONLY)));
+    }
+
+    void
+    FileReader::open(const std::string& path)
+    {
+        TESTLIBRARY_ASSERT(!path.empty(), "path is empty");
+
+        open(path.c_str());
+    }
+}
 
 
 namespace tl
 {
+#ifdef PART_OF_FILE_STD_READERS
+    PartOfFileReader StandardReaders::input(true);
+    PartOfFileReader StandardReaders::output(true);
+    PartOfFileReader StandardReaders::ans(true);
+#elif defined(FILE_STD_READERS)
+    FileReader StandardReaders::input(true);
+    FileReader StandardReaders::output(true);
+    FileReader StandardReaders::ans(true);
+#else
     PartOfStdinReader StandardReaders::input(true);
     PartOfStdinReader StandardReaders::output(true);
     PartOfStdinReader StandardReaders::ans(true);
-}
-
-#include <cstring>
-
-namespace tl
-{
-    std::string
-    StringTools::partOfStr(std::string str)
-    {
-        if (str.length() <= 64)
-        {
-            return str;
-        }
-        else
-        {
-            return str.substr(0, 30) + "..." +
-                str.substr(str.length() - 31, 31);
-        }
-    }
-
-    char* StringTools::withEnglishEnding(int num)
-    {
-        int resultSize = num / 10 + 4;
-        char* result = new char[resultSize];
-        result[resultSize - 1] = '\000';
-        std::sprintf(result, "%d", num);
-
-        if (num / 10 == 1)
-        {
-            std::strncat(result, "th", 3);
-        }
-        else
-        {
-            switch (num % 10) {
-                case 1:
-                    std::strncat(result, "st", 3);
-                case 2:
-                    std::strncat(result, "nd", 3);
-                case 3:
-                    std::strncat(result, "rd", 3);
-                default:
-                    std::strncat(result, "th", 3);
-            }
-        }
-
-        return result;
-    }
+#endif
 }
 
 
@@ -1962,3 +2146,360 @@ namespace tl
     }
 }
 
+
+namespace tl
+{
+    std::string
+    StringTools::partOfStr(std::string str)
+    {
+        if (str.length() <= 64)
+        {
+            return str;
+        }
+        else
+        {
+            return str.substr(0, 30) + "..." +
+                   str.substr(str.length() - 31, 31);
+        }
+    }
+
+    char*
+    StringTools::withEnglishEnding(std::uint8_t num)
+    {
+        return withEnglishEnding(num, "%u");
+    }
+
+    char*
+    StringTools::withEnglishEnding(std::uint16_t num)
+    {
+        return withEnglishEnding(num, "%u");
+    }
+
+    char*
+    StringTools::withEnglishEnding(std::uint32_t num)
+    {
+        return withEnglishEnding(num, "%u");
+    }
+
+    char*
+    StringTools::withEnglishEnding(std::uint64_t num)
+    {
+#ifdef __GNUC__
+        return withEnglishEnding(num, "%lu");
+#elif defined(_MSC_VER)
+        return withEnglishEnding(num, "%llu");
+#endif
+    }
+
+    char*
+    StringTools::withEnglishEnding(std::int8_t num)
+    {
+        return withEnglishEnding(num,
+                                 "%i",
+                                 num > 0 ?
+                                 static_cast<int8_t>(0) :
+                                 static_cast<int8_t>(1));
+    }
+
+    char*
+    StringTools::withEnglishEnding(std::int16_t num)
+    {
+        return withEnglishEnding(num,
+                                 "%i",
+                                 num > 0 ?
+                                 static_cast<int16_t>(0) :
+                                 static_cast<int16_t>(1));
+    }
+
+    char*
+    StringTools::withEnglishEnding(std::int32_t num)
+    {
+        return withEnglishEnding(num, "%i", num > 0 ? 0 : 1);
+    }
+
+    char*
+    StringTools::withEnglishEnding(std::int64_t num)
+    {
+#ifdef __GNUC__
+        return withEnglishEnding(num, "%li", num > 0L ? 0L : 1L);
+#elif defined(_MSC_VER)
+        return withEnglishEnding(num, "%lli", num > 0LL ? 0LL : 1LL);
+#endif
+    }
+
+    template<typename Int>
+    char*
+    StringTools::withEnglishEnding(const Int num,
+                                         const char* format,
+                                         const Int beginSize)
+    {
+        Int resultSize = num / 10 + 4 + beginSize;
+        char* result = new char[resultSize];
+        result[resultSize - 1] = '\000';
+        std::sprintf(result, format, num);
+
+        if (num / 10 == 1)
+        {
+            std::strncat(result, "th", 3);
+        }
+        else
+        {
+            switch (num % 10) {
+                case 1:
+                    std::strncat(result, "st", 3);
+                    break;
+                case 2:
+                    std::strncat(result, "nd", 3);
+                    break;
+                case 3:
+                    std::strncat(result, "rd", 3);
+                    break;
+                default:
+                    std::strncat(result, "th", 3);
+                    break;
+            }
+        }
+
+        return result;
+    }
+}
+
+#ifndef WITHOUT_BACK_COMP
+
+namespace tl::bc
+{
+    InStream::InStream(tl::AbstractReader& reader) :
+            mReader(reader)
+    {
+
+    }
+
+    bool
+    InStream::seekEof()
+    {
+        return mReader.isEndOfFile();
+    }
+
+    void
+    InStream::readWordTo(std::string& result)
+    {
+        mReader.readStr(result);
+    }
+
+    void
+    InStream::readTokenTo(std::string& result)
+    {
+        mReader.readStr(result);
+    }
+
+    void
+    InStream::readStringTo(std::string& result)
+    {
+        mReader.readStr(result);
+    }
+
+    std::string
+    InStream::readWord()
+    {
+        std::string result;
+        mReader.readStr(result);
+
+        return result;
+    }
+
+    std::string
+    InStream::readToken()
+    {
+        return readWord();
+    }
+
+    std::string
+    InStream::readString()
+    {
+        return readWord();
+    }
+
+    int
+    InStream::readInteger()
+    {
+        int result;
+        mReader.readNum(result);
+
+        return result;
+    }
+
+    int
+    InStream::readInt()
+    {
+        return readInteger();
+    }
+
+    long long
+    InStream::readLong()
+    {
+        long long result;
+        mReader.readLongLong(result);
+
+        return result;
+    }
+
+    double
+    InStream::readReal()
+    {
+        double result;
+        mReader.readNum(result);
+
+        return result;
+    }
+
+    double
+    InStream::readDouble()
+    {
+        return readReal();
+    }
+}
+
+
+namespace tl::bc
+{
+    void setTestCase(int testCase)
+    {
+
+    }
+
+    void unsetTestCase()
+    {
+
+    }
+
+    static void __testlib_fail(const std::string &message)
+    {
+
+    }
+
+    static bool __testlib_prelimIsNaN(double r)
+    {
+        return false;
+    }
+
+    static std::string removeDoubleTrailingZeroes(std::string value)
+    {
+        return std::string();
+    }
+
+    std::string format(const char *fmt, ...)
+    {
+        return std::string();
+    }
+
+    std::string format(const std::string fmt, ...)
+    {
+        return std::string();
+    }
+
+    static std::string __testlib_part(const std::string &s)
+    {
+        return std::string();
+    }
+
+    static bool __testlib_isNaN(double r)
+    {
+        return false;
+    }
+
+    static double __testlib_nan()
+    {
+        return 0.;
+    }
+
+    static bool __testlib_isInfinite(double r)
+    {
+        return false;
+    }
+
+    inline bool doubleCompare(double expected, double result, double MAX_DOUBLE_ERROR)
+    {
+        return false;
+    }
+
+    inline double doubleDelta(double expected, double result)
+    {
+        return 0.;
+    }
+
+    void registerTestlibCmd(int argc, char *argv[])
+    {
+#ifdef FILE_STD_READERS
+        tl::StandardReaders::input.open(argv[1]);
+        tl::StandardReaders::output.open(argv[2]);
+        tl::StandardReaders::ans.open(argv[3]);
+#elif defined(PART_OF_FILE_STD_READERS)
+        tl::StandardReaders::input.open(argv[1]);
+        tl::StandardReaders::output.open(nullptr);
+        tl::StandardReaders::ans.open(nullptr);
+#endif
+    }
+
+    void setName(const char *format, ...)
+    {
+
+    }
+
+    void quitf(TResult result, const char* format, ...)
+    {
+        switch (result)
+        {
+            case TResult::_ok:
+                CORRECT_VER(write)(1,
+                                   static_cast<const void*>("ok "),
+                                   3);
+                break;
+            case TResult::_wa:
+                CORRECT_VER(write)(1,
+                                   static_cast<const void*>("wa "),
+                                   3);
+                break;
+        }
+
+        va_list ap;
+        va_start(ap, format);
+        std::vprintf(format, ap);
+        va_end(ap);
+    }
+}
+
+
+namespace tl::bc
+{
+    pattern::pattern(std::string s)
+    {
+
+    }
+
+    std::string
+    pattern::next(random_t& rnd) const
+    {
+        return std::string();
+    }
+
+    bool
+    pattern::matches(const std::string& s) const
+    {
+        return false;
+    }
+
+    std::string
+    pattern::src() const
+    {
+        return std::string();
+    }
+}
+
+
+namespace tl::bc
+{
+
+}
+
+#endif
+using namespace tl::bc;

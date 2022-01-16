@@ -14,7 +14,8 @@ namespace tl
         openPart(fd);
     }
 
-    void AbstractPartOfFileReader::openPart(const int fd)
+    void
+    AbstractPartOfFileReader::openPart(const int fd)
     {
         TESTLIBRARY_ASSERT(fd != -1, "file doesn't exist");
         TESTLIBRARY_ASSERT(fd != 1,
@@ -29,9 +30,9 @@ namespace tl
 #elif defined(_MSC_VER)
         ::CORRECT_VER(read)(fd, static_cast<void*>(&sizeOfPart), 4);
 
-        std::size_t lastFourBites
+        std::size_t lastFourBites;
         ::CORRECT_VER(read)(fd, static_cast<void*>(&lastFourBites), 4);
-        TESTLIBRARY_ASSERT(lastFourBites != 0, "You can't read so long file in Windows");
+        TESTLIBRARY_ASSERT(lastFourBites == 0, "You can't read so long file in Windows");
 #endif
 
         mData = new char[sizeOfPart + 1];

@@ -34,7 +34,7 @@ namespace tl
 //      const DWORD fSize(GetFileSize(hF, NULL));
 #else
         const long fSize(::CORRECT_VER(lseek)(fd, 0L, SEEK_END));
-            ::CORRECT_VER(lseek)(fd, 0L, SEEK_SET);
+        ::CORRECT_VER(lseek)(fd, 0L, SEEK_SET);
 #endif
 
         mData = new char[fSize + 1];
