@@ -1,7 +1,7 @@
 #ifndef TESTLIBRARY_TESTLIBFUNCS_H
 #define TESTLIBRARY_TESTLIBFUNCS_H
 
-#include <stdarg.h>
+#include <cstdarg>
 #include <string>
 
 #include "../include/StandardReaders.h"

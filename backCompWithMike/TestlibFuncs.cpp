@@ -29,7 +29,14 @@ namespace tl::bc
 
     std::string format(const char *fmt, ...)
     {
-        return std::string();
+        static char buff[16777216];
+
+        std::va_list ap;
+        va_start(ap, fmt);
+        std::vsnprintf(buff, 16777216, fmt, ap);
+        va_end(ap);
+
+        return buff;
     }
 
     std::string format(const std::string fmt, ...)
@@ -113,18 +120,17 @@ namespace tl::bc
         {
             return "th";
         }
-        else
+
+        switch (x % 10)
         {
-            switch (x % 10) {
-                case 1:
-                    return "st";
-                case 2:
-                    return "nd";
-                case 3:
-                    return "rd";
-                default:
-                    return "th";
-            }
+            case 1:
+                return "st";
+            case 2:
+                return "nd";
+            case 3:
+                return "rd";
+            default:
+                return "th";
         }
     }
 
