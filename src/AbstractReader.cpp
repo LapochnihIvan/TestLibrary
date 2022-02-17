@@ -781,17 +781,17 @@ namespace tl
         num = 0;
 
         char* begin(mData);
-        Int nexNum;
+        Int nextNum;
         while (isNotWhitespace() && !isEndOfFile())
         {
-            nexNum = *mData - '0';
-            if (isNotDigit() || isNotInRange(num, nexNum, limit))
+            nextNum = *mData - '0';
+            if (isNotDigit() || isNotInRange(num, nextNum, limit))
             {
                 mData = begin;
 
                 return false;
             }
-            num = num * 10 + nexNum;
+            num = num * 10 + nextNum;
 
             mData++;
         }
@@ -808,7 +808,7 @@ namespace tl
     bool
     AbstractReader:: readAbstractSignedInt(Int& num, const Int maxSize, const Int minSize)
     {
-        bool minus = false;
+        bool minus(false);
         if (*mData == '-')
         {
             minus = true;
@@ -837,7 +837,7 @@ namespace tl
             return false;
         }
 
-        bool minus = false;
+        bool minus(false);
         if (*mData == '-')
         {
             minus = true;
