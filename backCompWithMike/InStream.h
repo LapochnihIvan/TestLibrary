@@ -6,7 +6,7 @@
 namespace tl::bc {
     class InStream {
     public:
-        InStream(tl::AbstractReader &reader);
+        explicit InStream(tl::AbstractReader &reader);
 
         bool seekEof();
 
