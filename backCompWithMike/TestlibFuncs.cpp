@@ -66,7 +66,7 @@ namespace tl::bc
 
     inline bool doubleCompare(double expected, double result, double MAX_DOUBLE_ERROR)
     {
-        return false;
+        return tl::Compares::doubleCmp(expected, result, MAX_DOUBLE_ERROR);
     }
 
     inline double doubleDelta(double expected, double result)
@@ -108,10 +108,12 @@ namespace tl::bc
                 break;
         }
 
-        va_list ap;
+        std::va_list ap;
         va_start(ap, format);
         std::vprintf(format, ap);
         va_end(ap);
+
+        std::exit(0);
     }
 
     inline std::string englishEnding(int x)
@@ -137,5 +139,74 @@ namespace tl::bc
     inline std::string compress(const std::string &s)
     {
         return tl::StringTools::partOfStr(s);
+    }
+
+#define STRING_TO_LONG_LONG(type, limit)                                                     \
+do                                                                                           \
+{                                                                                            \
+    type nextNum;                                                                            \
+    while (*buffer != '\000')                                                                 \
+    {                                                                                        \
+        nextNum = *buffer - '0';                                                             \
+        if (*buffer < '0' || *buffer > '9'                                                   \
+            || (((limit) - nextNum) / 10) < result)                                          \
+        {                                                                                    \
+            quitf(_wa,                                                                       \
+                ("Expected integer, but \"" + __testlib_part(buffer) + "\" found").c_str()); \
+        }                                                                                    \
+        result = result * 10 + nextNum;                                                      \
+                                                                                             \
+        buffer++;                                                                            \
+    }                                                                                        \
+} while(false)
+
+    static inline long long stringToLongLong(InStream &in, const char *buffer)
+    {
+        if (buffer == nullptr)
+        {
+            quitf(_wa, "Expected integer, but nullptr found");
+        }
+
+        bool minus(false);
+        if (*buffer == '-')
+        {
+            minus = true;
+            buffer++;
+        }
+
+        long long result = 0;
+
+        if (minus)
+        {
+            STRING_TO_LONG_LONG(long long, INT64_MAX);
+            result *= -1;
+        }
+        else
+        {
+            STRING_TO_LONG_LONG(long long, INT64_MIN);
+        }
+
+        return result;
+    }
+
+    static inline unsigned long long stringToUnsignedLongLong(InStream &in, const char *buffer)
+    {
+        if (buffer == nullptr)
+        {
+            quitf(_wa, "Expected integer, but nullptr found");
+        }
+
+        unsigned long long result = 0;
+
+        STRING_TO_LONG_LONG(unsigned long long, UINT64_MAX);
+
+        return result;
+    }
+
+    std::string upperCase(std::string s) {
+        std::string res;
+        std::transform(s.begin(), s.end(), std::back_inserter(res), toupper);
+
+        return res;
     }
 }

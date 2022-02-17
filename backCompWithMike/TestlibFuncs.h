@@ -6,6 +6,9 @@
 
 #include "../include/StandardReaders.h"
 #include "../include/StringTools.h"
+#include "../include/Compares.h"
+
+#include "../backCompWithMike/InStream.h"
 
 namespace tl::bc
 {
@@ -62,6 +65,14 @@ namespace tl::bc
     inline std::string englishEnding(int x);
 
     inline std::string compress(const std::string &s);
+
+    static inline long long stringToLongLong(InStream &in, const char *buffer);
+
+    static inline unsigned long long stringToUnsignedLongLong(InStream &in, const char *buffer);
+
+    inline bool doubleCompare(double expected, double result, double MAX_DOUBLE_ERROR);
+
+    std::string upperCase(std::string s);
 
 
     template<typename T>

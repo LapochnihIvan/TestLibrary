@@ -552,8 +552,8 @@ namespace tl
     {
     public:
         [[nodiscard]] static bool doubleCmp(double expected,
-                                            double result,
-                                            double maxDblErr);
+                                                   double result,
+                                                   double maxDblErr);
     };
 }
 
@@ -607,7 +607,7 @@ namespace tl
 namespace tl::bc {
     class InStream {
     public:
-        InStream(tl::AbstractReader &reader);
+        explicit InStream(tl::AbstractReader &reader);
 
         bool seekEof();
 
@@ -661,6 +661,7 @@ namespace tl::bc
 
 #include <cstdarg>
 #include <string>
+
 
 
 namespace tl::bc
@@ -718,6 +719,14 @@ namespace tl::bc
     inline std::string englishEnding(int x);
 
     inline std::string compress(const std::string &s);
+
+    static inline long long stringToLongLong(InStream &in, const char *buffer);
+
+    static inline unsigned long long stringToUnsignedLongLong(InStream &in, const char *buffer);
+
+    inline bool doubleCompare(double expected, double result, double MAX_DOUBLE_ERROR);
+
+    std::string upperCase(std::string s);
 
 
     template<typename T>
@@ -1577,17 +1586,17 @@ namespace tl
         num = 0;
 
         char* begin(mData);
-        Int nexNum;
+        Int nextNum;
         while (isNotWhitespace() && !isEndOfFile())
         {
-            nexNum = *mData - '0';
-            if (isNotDigit() || isNotInRange(num, nexNum, limit))
+            nextNum = *mData - '0';
+            if (isNotDigit() || isNotInRange(num, nextNum, limit))
             {
                 mData = begin;
 
                 return false;
             }
-            num = num * 10 + nexNum;
+            num = num * 10 + nextNum;
 
             mData++;
         }
@@ -1604,7 +1613,7 @@ namespace tl
     bool
     AbstractReader:: readAbstractSignedInt(Int& num, const Int maxSize, const Int minSize)
     {
-        bool minus = false;
+        bool minus(false);
         if (*mData == '-')
         {
             minus = true;
@@ -1633,7 +1642,7 @@ namespace tl
             return false;
         }
 
-        bool minus = false;
+        bool minus(false);
         if (*mData == '-')
         {
             minus = true;
@@ -2177,24 +2186,28 @@ namespace tl
     char*
     StringTools::withEnglishEnding(std::uint8_t num)
     {
+        printf("UINT8_T\n");
         return withEnglishEnding(num, "%u");
     }
 
     char*
     StringTools::withEnglishEnding(std::uint16_t num)
     {
+        printf("UINT16_T\n");
         return withEnglishEnding(num, "%u");
     }
 
     char*
     StringTools::withEnglishEnding(std::uint32_t num)
     {
+        printf("UINT32_T\n");
         return withEnglishEnding(num, "%u");
     }
 
     char*
     StringTools::withEnglishEnding(std::uint64_t num)
     {
+        printf("UINT64_T\n");
 #ifdef __GNUC__
         return withEnglishEnding(num, "%lu");
 #elif defined(_MSC_VER)
@@ -2205,9 +2218,10 @@ namespace tl
     char*
     StringTools::withEnglishEnding(std::int8_t num)
     {
+        printf("INT8_T\n");
         return withEnglishEnding(num,
                                  "%i",
-                                 num > 0 ?
+                                 num >= 0 ?
                                  static_cast<int8_t>(0) :
                                  static_cast<int8_t>(1));
     }
@@ -2215,9 +2229,10 @@ namespace tl
     char*
     StringTools::withEnglishEnding(std::int16_t num)
     {
+        printf("INT16_T\n");
         return withEnglishEnding(num,
                                  "%i",
-                                 num > 0 ?
+                                 num >= 0 ?
                                  static_cast<int16_t>(0) :
                                  static_cast<int16_t>(1));
     }
@@ -2225,27 +2240,31 @@ namespace tl
     char*
     StringTools::withEnglishEnding(std::int32_t num)
     {
-        return withEnglishEnding(num, "%i", num > 0 ? 0 : 1);
+        printf("INT32_T\n");
+        return withEnglishEnding(num, "%i", num >= 0 ? 0 : 1);
     }
 
     char*
     StringTools::withEnglishEnding(std::int64_t num)
     {
+        printf("INT64_T\n");
 #ifdef __GNUC__
-        return withEnglishEnding(num, "%li", num > 0L ? 0L : 1L);
+        return withEnglishEnding(num, "%li", num >= 0L ? 0L : 1L);
 #elif defined(_MSC_VER)
-        return withEnglishEnding(num, "%lli", num > 0LL ? 0LL : 1LL);
+        return withEnglishEnding(num, "%lli", num >= 0LL ? 0LL : 1LL);
 #endif
     }
 
     template<typename Int>
     char*
     StringTools::withEnglishEnding(const Int num,
-                                         const char* format,
-                                         const Int beginSize)
+                                   const char* format,
+                                   const Int beginSize)
     {
-        Int numSize(std::log10(num) + 2);
-        Int resultSize(numSize + 2 + beginSize);
+        Int numSize(
+                static_cast<Int>(std::log10(beginSize == 0 ? num : -num))
+                + 2 + beginSize);
+        Int resultSize(numSize + 2);
         char* result = new char[resultSize];
         result[resultSize - 1] = '\000';
         std::snprintf(result, numSize, format, num);
@@ -2273,7 +2292,7 @@ namespace tl
             }
         }
 
-        std::snprintf(result, 3, "%s", ending);
+        std::snprintf(result + numSize - 1, 3, "%s", ending);
 
         return result;
     }
@@ -2441,7 +2460,7 @@ namespace tl::bc
 
     inline bool doubleCompare(double expected, double result, double MAX_DOUBLE_ERROR)
     {
-        return false;
+        return tl::Compares::doubleCmp(expected, result, MAX_DOUBLE_ERROR);
     }
 
     inline double doubleDelta(double expected, double result)
@@ -2483,10 +2502,12 @@ namespace tl::bc
                 break;
         }
 
-        va_list ap;
+        std::va_list ap;
         va_start(ap, format);
         std::vprintf(format, ap);
         va_end(ap);
+
+        std::exit(0);
     }
 
     inline std::string englishEnding(int x)
@@ -2512,6 +2533,75 @@ namespace tl::bc
     inline std::string compress(const std::string &s)
     {
         return tl::StringTools::partOfStr(s);
+    }
+
+#define STRING_TO_LONG_LONG(type, limit)                                                     \
+do                                                                                           \
+{                                                                                            \
+    type nextNum;                                                                            \
+    while (*buffer != '\000')                                                                 \
+    {                                                                                        \
+        nextNum = *buffer - '0';                                                             \
+        if (*buffer < '0' || *buffer > '9'                                                   \
+            || (((limit) - nextNum) / 10) < result)                                          \
+        {                                                                                    \
+            quitf(_wa,                                                                       \
+                ("Expected integer, but \"" + __testlib_part(buffer) + "\" found").c_str()); \
+        }                                                                                    \
+        result = result * 10 + nextNum;                                                      \
+                                                                                             \
+        buffer++;                                                                            \
+    }                                                                                        \
+} while(false)
+
+    static inline long long stringToLongLong(InStream &in, const char *buffer)
+    {
+        if (buffer == nullptr)
+        {
+            quitf(_wa, "Expected integer, but nullptr found");
+        }
+
+        bool minus(false);
+        if (*buffer == '-')
+        {
+            minus = true;
+            buffer++;
+        }
+
+        long long result = 0;
+
+        if (minus)
+        {
+            STRING_TO_LONG_LONG(long long, INT64_MAX);
+            result *= -1;
+        }
+        else
+        {
+            STRING_TO_LONG_LONG(long long, INT64_MIN);
+        }
+
+        return result;
+    }
+
+    static inline unsigned long long stringToUnsignedLongLong(InStream &in, const char *buffer)
+    {
+        if (buffer == nullptr)
+        {
+            quitf(_wa, "Expected integer, but nullptr found");
+        }
+
+        unsigned long long result = 0;
+
+        STRING_TO_LONG_LONG(unsigned long long, UINT64_MAX);
+
+        return result;
+    }
+
+    std::string upperCase(std::string s) {
+        std::string res;
+        std::transform(s.begin(), s.end(), std::back_inserter(res), toupper);
+
+        return res;
     }
 }
 
