@@ -50,7 +50,7 @@ namespace tl
     {
         return withEnglishEnding(num,
                                  "%i",
-                                 num > 0 ?
+                                 num >= 0 ?
                                  static_cast<int8_t>(0) :
                                  static_cast<int8_t>(1));
     }
@@ -60,7 +60,7 @@ namespace tl
     {
         return withEnglishEnding(num,
                                  "%i",
-                                 num > 0 ?
+                                 num >= 0 ?
                                  static_cast<int16_t>(0) :
                                  static_cast<int16_t>(1));
     }
@@ -68,27 +68,29 @@ namespace tl
     char*
     StringTools::withEnglishEnding(std::int32_t num)
     {
-        return withEnglishEnding(num, "%i", num > 0 ? 0 : 1);
+        return withEnglishEnding(num, "%i", num >= 0 ? 0 : 1);
     }
 
     char*
     StringTools::withEnglishEnding(std::int64_t num)
     {
 #ifdef __GNUC__
-        return withEnglishEnding(num, "%li", num > 0L ? 0L : 1L);
+        return withEnglishEnding(num, "%li", num >= 0L ? 0L : 1L);
 #elif defined(_MSC_VER)
-        return withEnglishEnding(num, "%lli", num > 0LL ? 0LL : 1LL);
+        return withEnglishEnding(num, "%lli", num >= 0LL ? 0LL : 1LL);
 #endif
     }
 
     template<typename Int>
     char*
     StringTools::withEnglishEnding(const Int num,
-                                         const char* format,
-                                         const Int beginSize)
+                                   const char* format,
+                                   const Int beginSize)
     {
-        Int numSize(std::log10(num) + 2);
-        Int resultSize(numSize + 2 + beginSize);
+        Int numSize(
+                static_cast<Int>(std::log10(beginSize == 0 ? num : -num))
+                + 2 + beginSize);
+        Int resultSize(numSize + 2);
         char* result = new char[resultSize];
         result[resultSize - 1] = '\000';
         std::snprintf(result, numSize, format, num);
@@ -116,7 +118,7 @@ namespace tl
             }
         }
 
-        std::snprintf(result, 3, "%s", ending);
+        std::snprintf(result + numSize - 1, 3, "%s", ending);
 
         return result;
     }
