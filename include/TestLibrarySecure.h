@@ -14,8 +14,8 @@
 #include <cassert>
 
 #ifdef NDEBUG
-#   define TESTLIBRARY_ASSERT(expression, message)
-#   define TESTLIBRARY_NONNULL_ASSERT(ptr)
+#   define TESTLIBRARY_ASSERT(expression, message) void(0)
+#   define TESTLIBRARY_NONNULL_ASSERT(ptr) void(0)
 #else
 #    ifdef __GNUC__
 #        define TESTLIBRARY_ASSERT(expression, message)						\
