@@ -1,22 +1,26 @@
 #ifndef TESTLIBRARY_TESTLIBFUNCS_H
 #define TESTLIBRARY_TESTLIBFUNCS_H
 
-#include <cstdarg>
 #include <string>
 
 #include "../include/StandardReaders.h"
+#include "../include/ResultWriter.h"
 #include "../include/StringTools.h"
 #include "../include/Compares.h"
 
 #include "../backCompWithMike/InStream.h"
 
+#if __cplusplus >= 201703L
 namespace tl::bc
+#else
+namespace tl { namespace bc
+#endif //__cplusplus >= 201703L
 {
     void setTestCase(int testCase);
 
     void unsetTestCase();
 
-    [[noreturn]] static void __testlib_fail(const std::string &message);
+    [[noreturn]] static void __testlib_fail(const std::string& message);
 
     static bool __testlib_prelimIsNaN(double r);
 
@@ -39,17 +43,16 @@ namespace tl::bc
 
     inline double doubleDelta(double expected, double result);
 
-    static void __testlib_set_binary(std::FILE *file);
+    static void __testlib_set_binary(std::FILE* file);
 
     void prepareOpts(int argc, char* argv[]);
 
 
-    void registerTestlibCmd(int argc, char *argv[]);
+    void registerTestlibCmd(int argc, char* argv[]);
 
-    void setName(const char *format, ...);
+    void setName(const char* format, ...);
 
-    enum TResult
-    {
+    enum TResult {
         _ok = 0,
         _wa = 1,
         _pe = 2,
@@ -60,15 +63,15 @@ namespace tl::bc
         _partially = 16
     };
 
-    void quitf(TResult result, const char *format, ...);
+    void quitf(TResult result, const char* format, ...);
 
     inline std::string englishEnding(int x);
 
-    inline std::string compress(const std::string &s);
+    inline std::string compress(const std::string& s);
 
-    static inline long long stringToLongLong(InStream &in, const char *buffer);
+    static inline long long stringToLongLong(InStream& in, const char* buffer);
 
-    static inline unsigned long long stringToUnsignedLongLong(InStream &in, const char *buffer);
+    static inline unsigned long long stringToUnsignedLongLong(InStream& in, const char* buffer);
 
     inline bool doubleCompare(double expected, double result, double MAX_DOUBLE_ERROR);
 
@@ -76,28 +79,28 @@ namespace tl::bc
 
 
     template<typename T>
-    static inline T __testlib_abs(const T &x)
-    {
+    static inline T __testlib_abs(const T& x) {
         return x > 0 ? x : -x;
     }
 
     template<typename T>
-    static inline T __testlib_min(const T& a, const T& b)
-    {
+    static inline T __testlib_min(const T& a, const T& b) {
         return a < b ? a : b;
     }
 
     template<typename T>
-    static inline T __testlib_max(const T& a, const T& b)
-    {
+    static inline T __testlib_max(const T& a, const T& b) {
         return a > b ? a : b;
     }
 
     template<typename T>
-    static std::string vtos(const T &t)
-    {
+    static std::string vtos(const T& t) {
         return std::to_string(t);
     }
+#if __cplusplus >= 201703L
 }
+#else
+}}
+#endif //__cplusplus >= 201703L
 
 #endif //TESTLIBRARY_TESTLIBFUNCS_H

@@ -1,6 +1,10 @@
 #include "TestlibFuncs.h"
 
+#if __cplusplus >= 201703L
 namespace tl::bc
+#else
+namespace tl { namespace bc
+#endif //__cplusplus >= 201703L
 {
     void setTestCase(int testCase)
     {
@@ -94,23 +98,21 @@ namespace tl::bc
 
     void quitf(TResult result, const char* format, ...)
     {
+        std::va_list ap;
+        va_start(ap, format);
+
         switch (result)
         {
             case TResult::_ok:
-                CORRECT_VER(write)(1,
-                                   static_cast<const void*>("ok "),
-                                   3);
+                tl::ResultWriter::vOKResultWr(format, ap);
                 break;
             case TResult::_wa:
-                CORRECT_VER(write)(1,
-                                   static_cast<const void*>("wa "),
-                                   3);
+                tl::ResultWriter::vWAResultWr(format, ap);
                 break;
+            case TResult::_pe:
+                tl::ResultWriter::vPEResultWr(format, ap);
         }
 
-        std::va_list ap;
-        va_start(ap, format);
-        std::vprintf(format, ap);
         va_end(ap);
 
         std::exit(0);
@@ -141,24 +143,24 @@ namespace tl::bc
         return tl::StringTools::partOfStr(s);
     }
 
-#define STRING_TO_LONG_LONG(type, limit)                                                     \
-do                                                                                           \
-{                                                                                            \
-    type nextNum;                                                                            \
-    while (*buffer != '\000')                                                                 \
-    {                                                                                        \
-        nextNum = *buffer - '0';                                                             \
-        if (*buffer < '0' || *buffer > '9'                                                   \
-            || (((limit) - nextNum) / 10) < result)                                          \
-        {                                                                                    \
-            quitf(_wa,                                                                       \
-                ("Expected integer, but \"" + __testlib_part(buffer) + "\" found").c_str()); \
-        }                                                                                    \
-        result = result * 10 + nextNum;                                                      \
-                                                                                             \
-        buffer++;                                                                            \
-    }                                                                                        \
-} while(false)
+#define STRING_TO_LONG_LONG(type, limit)                                                         \
+    do                                                                                           \
+    {                                                                                            \
+        type nextNum;                                                                            \
+        while (*buffer != '\000')                                                                \
+        {                                                                                        \
+            nextNum = *buffer - '0';                                                             \
+            if (*buffer < '0' || *buffer > '9'                                                   \
+                || (((limit) - nextNum) / 10) < result)                                          \
+            {                                                                                    \
+                quitf(_wa,                                                                       \
+                    ("Expected integer, but \"" + __testlib_part(buffer) + "\" found").c_str()); \
+            }                                                                                    \
+            result = result * 10 + nextNum;                                                      \
+                                                                                                 \
+            buffer++;                                                                            \
+        }                                                                                        \
+    } while(false)
 
     static inline long long stringToLongLong(InStream &in, const char *buffer)
     {
@@ -203,10 +205,24 @@ do                                                                              
         return result;
     }
 
-    std::string upperCase(std::string s) {
+    std::string upperCase(std::string s)
+    {
         std::string res;
-        std::transform(s.begin(), s.end(), std::back_inserter(res), toupper);
+
+#if __cplusplus >= 201703L
+//        std::transform(s.begin(), s.end(),
+//                       std::back_inserter(res), toupper);
+//#else
+        for (char& c : s)
+        {
+            c = std::toupper(c);
+        }
+#endif //__cplusplus >= 201703L
 
         return res;
     }
+#if __cplusplus >= 201703L
 }
+#else
+}}
+#endif //__cplusplus >= 201703L

@@ -6,12 +6,15 @@
 
 #include "random_t.h"
 
+#if __cplusplus >= 201703L
 namespace tl::bc
+#else
+namespace tl { namespace bc
+#endif //__cplusplus >= 201703L
 {
-class pattern
-{
+    class pattern {
     public:
-        pattern(std::string s);
+        explicit pattern(std::string s);
 
         std::string next(random_t& rnd) const;
 
@@ -28,6 +31,10 @@ class pattern
         int from;
         int to;
     };
+#if __cplusplus >= 201703L
 }
+#else
+}}
+#endif //__cplusplus >= 201703L
 
 #endif //TESTLIBRARY_PATTERN_H
