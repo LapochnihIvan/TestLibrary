@@ -1089,8 +1089,14 @@ namespace tl
     void
     Logger::resultLog(const char* messageFormat, std::va_list& ap)
     {
+        for (std::uint8_t numTab = 0; numTab < mCountTabs; numTab++)
+        {
+            putc('\t', mFile);
+        }
+
         write("checker has finished with message ", 34);
         std::vfprintf(mFile, messageFormat, ap);
+        putc('\n', mFile);
     }
 
     FILE* Logger::mFile = nullptr;
