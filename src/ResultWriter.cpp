@@ -5,19 +5,19 @@ namespace tl
     void ResultWriter::vOKResultWr(const char* format,
                                    std::va_list& ap)
     {
-        printMessage("ok", format, ap);
+        printMessage("ok ", format, ap);
     }
 
     void ResultWriter::vWAResultWr(const char* format,
                                    std::va_list& ap)
     {
-        printMessage("wa", format, ap);
+        printMessage("wa ", format, ap);
     }
 
     void ResultWriter::vPEResultWr(const char* format,
                                    std::va_list& ap)
     {
-        printMessage("pe", format, ap);
+        printMessage("pe ", format, ap);
     }
 
     void ResultWriter::OKResultWr(const char *format, ...)
@@ -48,7 +48,7 @@ namespace tl
                                     const char *format,
                                     std::va_list& ap)
     {
-        ::write(1, static_cast<const void*>(result), 2);
+        ::write(1, static_cast<const void*>(result), 3);
 
         std::vprintf(format, ap);
 

@@ -18,8 +18,8 @@
 #include <cassert>
 
 #ifdef NDEBUG
-#   define TESTLIBRARY_ASSERT(expression, message)
-#   define TESTLIBRARY_NONNULL_ASSERT(ptr)
+#   define TESTLIBRARY_ASSERT(expression, message) void(0)
+#   define TESTLIBRARY_NONNULL_ASSERT(ptr) void(0)
 #else
 #    ifdef __GNUC__
 #        define TESTLIBRARY_ASSERT(expression, message)						\
@@ -37,32 +37,208 @@
 
 #endif //TESTLIBRARY_TESTLIBRARYSECURE_H
 
-#ifndef TESTLIBRARY_ABSTRACTREADER_H
-#define TESTLIBRARY_ABSTRACTREADER_H
-
+#ifndef TESTLIBRARY_TESTLIBRARYIOSETTINGS_H
+#define TESTLIBRARY_TESTLIBRARYIOSETTINGS_H
 
 #ifdef __GNUC__
 #   include <unistd.h>
 
-#   include <sys/stat.h>
-
-#   define CORRECT_VER(func) func
+#   define CORRECT_VER(funcName) funcName
 #elif defined(_MSC_VER)
 #   include <io.h>
 
-//#   include <Windows.h>
-
-#   define CORRECT_VER(func) _ ## func
+#   define CORRECT_VER(funcName) _ ## funcName
 #endif
 
 #include <fcntl.h>
 
+#endif //TESTLIBRARY_TESTLIBRARYIOSETTINGS_H
+
+#ifndef TESTLIBRARY_LOGGER_H
+#define TESTLIBRARY_LOGGER_H
+
+#ifndef WITHOUT_LOGS
+#include <cstdio>
+#include <cstdint>
+#include <cstdarg>
+
+#include <iostream>
+
+
+namespace tl
+{
+    class Logger
+    {
+    public:
+        explicit Logger(const char* funcName,
+                        std::uint8_t funcNameSize);
+
+        void funcStartLog(const char* format = nullptr, ...);
+
+        void funcFinishLog(const char* format = nullptr, ...);
+
+        static void resultLog(const char* messageFormat, std::va_list& ap);
+
+    private:
+        const char* mFuncName;
+        std::uint8_t mFuncNameSize;
+#ifdef TIME_CHECK_IN_LOGS
+        double mStartTime;
+        double mFinishTime;
+#endif //TIME_CHECK_IN_LOGS
+
+        static std::FILE* mFile;
+        static std::uint8_t mCountTabs;
+
+        static void write(const char* message, std::size_t messageSize);
+    };
+}
+
+#if !defined(__PRETTY_FUNCTION__) && defined(_MSC_VER)
+#   define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif
+
+#define FUNC_START_LOG(loggerName, ...)                                          \
+    tl::Logger loggerName(__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 1); \
+    (loggerName).funcStartLog(__VA_ARGS__)
+
+#define FUNC_FINISH_LOG(logger, ...) (logger).funcFinishLog(__VA_ARGS__)
+
+#define FUNC_RETURN_LOG(logger, resultType, resultName, format, returnVal) \
+    resultType resultName(returnVal);                                      \
+    (logger).funcFinishLog(format, resultName);                            \
+                                                                           \
+    return resultName
+
+#define BOOL_FUNC_RETURN_LOG(logger, resultName, returnVal)  \
+    bool resultName(returnVal);                              \
+    (logger).funcFinishLog((resultName) ? "true" : "false"); \
+                                                             \
+    return resultName
+#else
+#define FUNC_START_LOG(loggerName, funcName, ...) void(0)
+
+#define FUNC_FINISH_LOG(logger, ...) void(0)
+
+#define FUNC_RETURN_LOG(logger, resultType, resultName, format, returnVal) \
+    return returnVal
+
+#define BOOL_FUNC_RETURN_LOG(logger, resultName, returnVal) result returnVal
+#endif //WITHOUT_LOGS
+
+#endif //TESTLIBRARY_LOGGER_H
+
+#ifndef TESTLIBRARY_RESULTWRITER_H
+#define TESTLIBRARY_RESULTWRITER_H
+
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+
+
+namespace tl
+{
+    class ResultWriter
+            {
+    public:
+        static void vOKResultWr(const char* format,
+                                std::va_list& ap);
+
+        static void vWAResultWr(const char* format,
+                                std::va_list& ap);
+
+        static void vPEResultWr(const char* format,
+                                std::va_list& ap);
+
+        static void OKResultWr(const char* format, ...);
+
+        static void WAResultWr(const char* format, ...);
+
+        static void PEResultWr(const char* format, ...);
+
+    private:
+        static void printMessage(const char* result,
+                                 const char* format,
+                                 std::va_list& ap);
+    };
+}
+
+#endif //TESTLIBRARY_RESULTWRITER_H
+
+#ifndef TESTLIBRARY_ABSTRACTREADER_H
+#define TESTLIBRARY_ABSTRACTREADER_H
+
+#ifdef __GNUC__
+#   include <sys/stat.h>
+// #elif defined(_MSC_VER)
+// #   include <Windows.h>
+#endif
+
 #include <cmath>
 #include <cfloat>
+#include <cstring>
 
 #include <string>
 #include <vector>
 #include <functional>
+
+
+
+#define IS_NOT_OPEN_ASSERT \
+    TESTLIBRARY_ASSERT(isOpen() != false, "file isn't open")
+
+#ifdef READ_SELFMADE_ERRORS
+#   define READ_SUCCESS 0
+#   define READ_EOF -1
+#   define READ_TYPE_ERROR -2
+#   define READ_INCORRECT_SIZE -3
+
+#   define READ_RET_TYPE int
+
+#   define READ_POS_RESULT(logger, result)               \
+        FUNC_FINISH_LOG(logger, #result"(%d)", result);  \
+                                                         \
+        return result
+
+#   define READ_NEG_RESULT(logger, result, message, ...)                       \
+        FUNC_FINISH_LOG(logger, #result"(%d), " message, result __VA_ARGS__);  \
+                                                                               \
+        return result
+
+#   define READ_USE_INSERT_FUNC_RESULT(logger, resultName, insertFuncCall)       \
+        FUNC_RETURN_LOG(logger, READ_RET_TYPE, resultName, "%d", insertFuncCall)
+
+#   define READ_CHECK_INSERT_FUNC_RESULT(logger, resultName, insertFuncCall) \
+        READ_RET_TYPE resultName(insertFuncCall);                            \
+        if (resultName != READ_SUCCESS)                                      \
+        {                                                                    \
+            FUNC_FINISH_LOG(logger, "%d", resultName);                       \
+            return resultName;                                               \
+        }
+#else
+#   define READ_SUCCESS
+#   define READ_EOF WAResultWr
+#   define READ_TYPE_ERROR PEResultWr
+#   define READ_INCORRECT_SIZE WAResultWr
+
+#   define READ_RET_TYPE void
+
+#   define READ_POS_RESULT(logger, result) FUNC_FINISH_LOG(logger)
+
+#   define _READ_NEG_RESULT(logger, result, message, ...) \
+        tl::ResultWriter::result(message __VA_ARGS__)
+
+#   define READ_NEG_RESULT(logger, result, message, ...) \
+        _READ_NEG_RESULT(logger, result, message, __VA_ARGS__)
+
+#   define READ_USE_INSERT_FUNC_RESULT(logger, resultName, insertFuncCall) \
+        insertFuncCall;                                                    \
+                                                                           \
+        FUNC_FINISH_LOG(logger)
+
+#   define READ_CHECK_INSERT_FUNC_RESULT(logger, resultName, insertFuncCall) \
+        READ_USE_INSERT_FUNC_RESULT(logger, resultName, insertFuncCall)
+#endif //READ_SELFMADE_ERRORS
 
 namespace tl
 {
@@ -86,220 +262,220 @@ namespace tl
 
         void readAllFile(char*& fileStr);
 
-        bool readWhitespace(char& whitespace);
+        READ_RET_TYPE readWhitespace(char& whitespace);
 
-        bool readWhitespaces(char*& whitespaces);
+        READ_RET_TYPE readWhitespaces(char*& whitespaces);
 
-        bool readWhitespaces(std::string& whitespaces);
+        READ_RET_TYPE readWhitespaces(std::string& whitespaces);
 
-        bool readChar(char& c);
+        READ_RET_TYPE readChar(char& c);
 
-        bool readNum(std::int8_t& num);
+        READ_RET_TYPE readNum(std::int8_t& num);
 
-        bool readNum(std::uint8_t& num);
+        READ_RET_TYPE readNum(std::uint8_t& num);
 
-        bool readNum(std::int16_t& num);
+        READ_RET_TYPE readNum(std::int16_t& num);
 
-        bool readNum(std::uint16_t& num);
+        READ_RET_TYPE readNum(std::uint16_t& num);
 
-        bool readNum(std::int32_t& num);
+        READ_RET_TYPE readNum(std::int32_t& num);
 
-        bool readNum(std::uint32_t& num);
+        READ_RET_TYPE readNum(std::uint32_t& num);
 
-        bool readNum(std::int64_t& num);
+        READ_RET_TYPE readNum(std::int64_t& num);
 
-        bool readNum(std::uint64_t& num);
+        READ_RET_TYPE readNum(std::uint64_t& num);
 
-        bool readInt8(std::int8_t& i);
+        READ_RET_TYPE readInt8(std::int8_t& i);
 
-        bool readUInt8(std::uint8_t& i);
+        READ_RET_TYPE readUInt8(std::uint8_t& i);
 
-        bool readInt16(std::int16_t& i);
+        READ_RET_TYPE readInt16(std::int16_t& i);
 
-        bool readUInt16(std::uint16_t& i);
+        READ_RET_TYPE readUInt16(std::uint16_t& i);
 
-        bool readInt32(std::int32_t& i);
+        READ_RET_TYPE readInt32(std::int32_t& i);
 
-        bool readUInt32(std::uint32_t& i);
+        READ_RET_TYPE readUInt32(std::uint32_t& i);
 
-        bool readInt64(std::int64_t& i);
+        READ_RET_TYPE readInt64(std::int64_t& i);
 
-        bool readUInt64(std::uint64_t& i);
+        READ_RET_TYPE readUInt64(std::uint64_t& i);
 
-        bool readShort(short& s);
+        READ_RET_TYPE readShort(short& s);
 
-        bool readUShort(unsigned short& s);
+        READ_RET_TYPE readUShort(unsigned short& s);
 
-        bool readInt(int& i);
+        READ_RET_TYPE readInt(int& i);
 
-        bool readUInt(unsigned int& i);
+        READ_RET_TYPE readUInt(unsigned int& i);
 
-        bool readLong(long& l);
+        READ_RET_TYPE readLong(long& l);
 
-        bool readULong(unsigned long& l);
+        READ_RET_TYPE readULong(unsigned long& l);
 
-        bool readLongLong(long long& ll);
+        READ_RET_TYPE readLongLong(long long& ll);
 
-        bool readULongLong(unsigned long long& ll);
+        READ_RET_TYPE readULongLong(unsigned long long& ll);
 
-        bool readHugeInt(hugeIntPtr& num);
+        READ_RET_TYPE readHugeInt(hugeIntPtr& i);
 
-        bool readHugeInt(hugeInt& num);
+        READ_RET_TYPE readHugeInt(hugeInt& i);
 
-        bool readNum(float& num);
+        READ_RET_TYPE readNum(float& num);
 
-        bool readNum(double& num);
+        READ_RET_TYPE readNum(double& num);
 
-        bool readBool(bool& b);
+        READ_RET_TYPE readBool(bool& b);
 
-        bool readStr(char* s,
-                     std::size_t sSize) __nonnull((2));
+        READ_RET_TYPE readStr(char* s,
+                              std::size_t sSize) __nonnull((2));
 
-        bool readStr(char*& emptyS) __nonnull((2));
+        READ_RET_TYPE readStr(char*& emptyS) __nonnull((2));
 
-        bool readStr(std::string& s, std::size_t sSize);
+        READ_RET_TYPE readStr(std::string& s, std::size_t sSize);
 
-        bool readStr(std::string& s);
+        READ_RET_TYPE readStr(std::string& s);
 
-        bool readInt8ArrSplitC(std::int8_t* arr,
-                              std::size_t arrSize,
-                              char delim = '\000')
+        READ_RET_TYPE readInt8ArrSplitC(std::int8_t* arr,
+                                        std::size_t arrSize,
+                                        char delim = '\000')
             __nonnull((2));
 
-        bool readUInt8ArrSplitC(std::uint8_t* arr,
-                              std::size_t arrSize,
-                              char delim = '\000')
+        READ_RET_TYPE readUInt8ArrSplitC(std::uint8_t* arr,
+                                         std::size_t arrSize,
+                                         char delim = '\000')
             __nonnull((2));
 
-        bool readInt16ArrSplitC(std::int16_t* arr,
-                              std::size_t arrSize,
-                              char delim = '\000')
+        READ_RET_TYPE readInt16ArrSplitC(std::int16_t* arr,
+                                         std::size_t arrSize,
+                                         char delim = '\000')
             __nonnull((2));
 
-        bool readUInt16ArrSplitC(std::uint16_t* arr,
-                              std::size_t arrSize,
-                              char delim = '\000')
+        READ_RET_TYPE readUInt16ArrSplitC(std::uint16_t* arr,
+                                          std::size_t arrSize,
+                                          char delim = '\000')
             __nonnull((2));
 
-        bool readIntArrSplitC(std::int32_t* arr,
-                              std::size_t arrSize,
-                              char delim = '\000')
+        READ_RET_TYPE readIntArrSplitC(std::int32_t* arr,
+                                       std::size_t arrSize,
+                                       char delim = '\000')
             __nonnull((2));
 
-        bool readUIntArrSplitC(std::uint32_t* arr,
-                              std::size_t arrSize,
-                              char delim = '\000')
+        READ_RET_TYPE readUIntArrSplitC(std::uint32_t* arr,
+                                        std::size_t arrSize,
+                                        char delim = '\000')
             __nonnull((2));
 
-        bool readInt64ArrSplitC(std::int64_t* arr,
-                              std::size_t arrSize,
-                              char delim = '\000')
+        READ_RET_TYPE readInt64ArrSplitC(std::int64_t* arr,
+                                         std::size_t arrSize,
+                                         char delim = '\000')
             __nonnull((2));
 
-        bool readUInt64ArrSplitC(std::uint64_t* arr,
-                              std::size_t arrSize,
-                              char delim = '\000')
+        READ_RET_TYPE readUInt64ArrSplitC(std::uint64_t* arr,
+                                          std::size_t arrSize,
+                                          char delim = '\000')
             __nonnull((2));
 
-        bool readInt8ArrSplitS(std::int8_t* arr,
-                              std::size_t arrSize,
-                              char* delim = nullptr)
+        READ_RET_TYPE readInt8ArrSplitS(std::int8_t* arr,
+                                        std::size_t arrSize,
+                                        char* delim = nullptr)
             __nonnull((2));
 
-        bool readUInt8ArrSplitS(std::uint8_t* arr,
-                              std::size_t arrSize,
-                              char* delim = nullptr)
+        READ_RET_TYPE readUInt8ArrSplitS(std::uint8_t* arr,
+                                         std::size_t arrSize,
+                                         char* delim = nullptr)
             __nonnull((2));
 
-        bool readInt16ArrSplitS(std::int16_t* arr,
-                              std::size_t arrSize,
-                              char* delim = nullptr)
+        READ_RET_TYPE readInt16ArrSplitS(std::int16_t* arr,
+                                         std::size_t arrSize,
+                                         char* delim = nullptr)
             __nonnull((2));
 
-        bool readUInt16ArrSplitS(std::uint16_t* arr,
-                              std::size_t arrSize,
-                              char* delim = nullptr)
+        READ_RET_TYPE readUInt16ArrSplitS(std::uint16_t* arr,
+                                          std::size_t arrSize,
+                                          char* delim = nullptr)
             __nonnull((2));
 
-        bool readIntArrSplitS(std::int32_t* arr,
-                              std::size_t arrSize,
-                              char* delim = nullptr)
+        READ_RET_TYPE readIntArrSplitS(std::int32_t* arr,
+                                       std::size_t arrSize,
+                                       char* delim = nullptr)
             __nonnull((2));
 
-        bool readUIntArrSplitS(std::uint32_t* arr,
-                              std::size_t arrSize,
-                              char* delim = nullptr)
+        READ_RET_TYPE readUIntArrSplitS(std::uint32_t* arr,
+                                        std::size_t arrSize,
+                                        char* delim = nullptr)
             __nonnull((2));
 
-        bool readInt64ArrSplitS(std::int64_t* arr,
-                              std::size_t arrSize,
-                              char* delim = nullptr)
+        READ_RET_TYPE readInt64ArrSplitS(std::int64_t* arr,
+                                         std::size_t arrSize,
+                                         char* delim = nullptr)
             __nonnull((2));
 
-        bool readUInt64ArrSplitS(std::uint64_t* arr,
-                              std::size_t arrSize,
-                              char* delim = nullptr)
+        READ_RET_TYPE readUInt64ArrSplitS(std::uint64_t* arr,
+                                          std::size_t arrSize,
+                                          char* delim = nullptr)
             __nonnull((2));
 
-        bool readInt8ArrSplitC(std::vector <std::int8_t>& arr,
-                              char delim = '\000');
+        READ_RET_TYPE readInt8ArrSplitC(std::vector <std::int8_t>& arr,
+                                        char delim = '\000');
 
-        bool readUInt8ArrSplitC(std::vector <std::uint8_t>& arr,
-                              char delim = '\000');
+        READ_RET_TYPE readUInt8ArrSplitC(std::vector <std::uint8_t>& arr,
+                                         char delim = '\000');
 
-        bool readInt16ArrSplitC(std::vector <std::int16_t>& arr,
-                              char delim = '\000');
+        READ_RET_TYPE readInt16ArrSplitC(std::vector <std::int16_t>& arr,
+                                         char delim = '\000');
 
-        bool readUInt16ArrSplitC(std::vector <std::uint16_t>& arr,
-                              char delim = '\000');
+        READ_RET_TYPE readUInt16ArrSplitC(std::vector <std::uint16_t>& arr,
+                                          char delim = '\000');
 
-        bool readIntArrSplitC(std::vector <std::int32_t>& arr,
-                              char delim = '\000');
+        READ_RET_TYPE readIntArrSplitC(std::vector <std::int32_t>& arr,
+                                       char delim = '\000');
 
-        bool readUIntArrSplitC(std::vector <std::uint32_t>& arr,
-                              char delim = '\000');
+        READ_RET_TYPE readUIntArrSplitC(std::vector <std::uint32_t>& arr,
+                                        char delim = '\000');
 
-        bool readInt64ArrSplitC(std::vector <std::int64_t>& arr,
-                              char delim = '\000');
+        READ_RET_TYPE readInt64ArrSplitC(std::vector <std::int64_t>& arr,
+                                         char delim = '\000');
 
-        bool readUInt64ArrSplitC(std::vector <std::uint64_t>& arr,
-                              char delim = '\000');
+        READ_RET_TYPE readUInt64ArrSplitC(std::vector <std::uint64_t>& arr,
+                                          char delim = '\000');
 
-        bool readFltArrSplitC(std::vector<float>& arr,
-                              char delim = '\000');
+        READ_RET_TYPE readFltArrSplitC(std::vector<float>& arr,
+                                       char delim = '\000');
 
-        bool readDblArrSplitC(std::vector<double>& arr,
-                              char delim = '\000');
+        READ_RET_TYPE readDblArrSplitC(std::vector<double>& arr,
+                                       char delim = '\000');
 
-        bool readInt8ArrSplitS(std::vector <std::int8_t>& arr,
-                              char* delim = nullptr);
+        READ_RET_TYPE readInt8ArrSplitS(std::vector <std::int8_t>& arr,
+                                        char* delim = nullptr);
 
-        bool readUInt8ArrSplitS(std::vector <std::uint8_t>& arr,
-                              char* delim = nullptr);
+        READ_RET_TYPE readUInt8ArrSplitS(std::vector <std::uint8_t>& arr,
+                                         char* delim = nullptr);
 
-        bool readInt16ArrSplitS(std::vector <std::int16_t>& arr,
-                              char* delim = nullptr);
+        READ_RET_TYPE readInt16ArrSplitS(std::vector <std::int16_t>& arr,
+                                         char* delim = nullptr);
 
-        bool readUInt16ArrSplitS(std::vector <std::uint16_t>& arr,
-                              char* delim = nullptr);
+        READ_RET_TYPE readUInt16ArrSplitS(std::vector <std::uint16_t>& arr,
+                                          char* delim = nullptr);
 
-        bool readIntArrSplitS(std::vector <std::int32_t>& arr,
-                              char* delim = nullptr);
+        READ_RET_TYPE readIntArrSplitS(std::vector <std::int32_t>& arr,
+                                       char* delim = nullptr);
 
-        bool readUIntArrSplitS(std::vector <std::uint32_t>& arr,
-                              char* delim = nullptr);
+        READ_RET_TYPE readUIntArrSplitS(std::vector <std::uint32_t>& arr,
+                                        char* delim = nullptr);
 
-        bool readInt64ArrSplitS(std::vector <std::int64_t>& arr,
-                              char* delim = nullptr);
+        READ_RET_TYPE readInt64ArrSplitS(std::vector <std::int64_t>& arr,
+                                         char* delim = nullptr);
 
-        bool readUInt64ArrSplitS(std::vector <std::uint64_t>& arr,
-                              char* delim = nullptr);
+        READ_RET_TYPE readUInt64ArrSplitS(std::vector <std::uint64_t>& arr,
+                                          char* delim = nullptr);
 
-        bool readFltArrSplitS(std::vector<float>& arr,
-                              char* delim = nullptr);
+        READ_RET_TYPE readFltArrSplitS(std::vector<float>& arr,
+                                       char* delim = nullptr);
 
-        bool readDblArrSplitS(std::vector<double>& arr,
-                              char* delim = nullptr);
+        READ_RET_TYPE readDblArrSplitS(std::vector<double>& arr,
+                                       char* delim = nullptr);
 
     protected:
         char* mData;
@@ -321,50 +497,50 @@ namespace tl
                                                const Num& nextNum,
                                                const Num& limit);
 
-        [[nodiscard]] inline bool readAbstractStr(char*& s,
-                                                  bool (AbstractReader::*continueCond)() const,
-                                                  const std::function<bool()>& exitCond = [](){
-                                                      return false;
-                                                  });
+        inline READ_RET_TYPE readAbstractStr(char*& s,
+                                             bool (AbstractReader::*continueCond)() const,
+                                             const std::function<bool()>& exitCond = [](){
+                                                 return false;
+                                             });
 
-        [[nodiscard]] inline bool readAbstractStr(std::string& s,
-                                                  bool (AbstractReader::*continueCond)() const,
-                                                  const std::function<bool()>& exitCond = [](){
-                                                      return false;
-                                                  });
-
-        template<typename Int>
-        [[nodiscard]] inline bool readAbstractInt(Int& num, Int limit);
+        inline READ_RET_TYPE readAbstractStr(std::string& s,
+                                             bool (AbstractReader::*continueCond)() const,
+                                             const std::function<bool()>& exitCond = [](){
+                                                 return false;
+                                             });
 
         template<typename Int>
-        [[nodiscard]] inline bool readAbstractSignedInt(Int& num,
-                                                        Int maxSize,
-                                                        Int minSize);
+        inline READ_RET_TYPE readAbstractInt(Int& num, Int limit);
+
+        template<typename Int>
+        inline READ_RET_TYPE readAbstractSignedInt(Int& num,
+                                                   Int maxSize,
+                                                   Int minSize);
 
         template<typename Real>
-        [[nodiscard]] inline bool readAbstractReal(Real& num,
-                                                   Real maxSize,
-                                                   Real minSize);
+        inline READ_RET_TYPE readAbstractReal(Real& num,
+                                              Real maxSize,
+                                              Real minSize);
 
         template<typename Num>
-        [[nodiscard]] inline bool readAbstractNumArr(Num* arr,
-                                                     std::size_t arrSize,
-                                                     char delim)
+        inline READ_RET_TYPE readAbstractNumArr(Num* arr,
+                                                std::size_t arrSize,
+                                                char delim)
             __nonnull((2));
 
         template<typename Num>
-        [[nodiscard]] inline bool readAbstractNumArr(Num* arr,
-                                                     std::size_t arrSize,
-                                                     char* delim)
+        inline READ_RET_TYPE readAbstractNumArr(Num* arr,
+                                                std::size_t arrSize,
+                                                char* delim)
             __nonnull((2));
 
         template<typename iterableArrT>
-        [[nodiscard]] inline bool readAbstractNumArr(iterableArrT& arr,
-                                                     char delim);
+        inline READ_RET_TYPE readAbstractNumArr(iterableArrT& arr,
+                                                char delim);
 
         template<typename iterableArrT>
-        [[nodiscard]] inline bool readAbstractNumArr(iterableArrT& arr,
-                                                     char* delim);
+        inline READ_RET_TYPE readAbstractNumArr(iterableArrT& arr,
+                                                char* delim);
     };
 }
 
@@ -552,8 +728,8 @@ namespace tl
     {
     public:
         [[nodiscard]] static bool doubleCmp(double expected,
-                                                   double result,
-                                                   double maxDblErr);
+                                            double result,
+                                            double maxDblErr);
     };
 }
 
@@ -604,18 +780,23 @@ namespace tl
 #define TESTLIBRARY_INSTREAM_H
 
 
-namespace tl::bc {
+#if __cplusplus >= 201703L
+namespace tl::bc
+#else
+namespace tl { namespace bc
+#endif //__cplusplus >= 201703L
+{
     class InStream {
     public:
-        explicit InStream(tl::AbstractReader &reader);
+        explicit InStream(tl::AbstractReader& reader);
 
         bool seekEof();
 
-        void readWordTo(std::string &result);
+        void readWordTo(std::string& result);
 
-        void readTokenTo(std::string &result);
+        void readTokenTo(std::string& result);
 
-        void readStringTo(std::string &result);
+        void readStringTo(std::string& result);
 
         std::string readWord();
 
@@ -636,8 +817,11 @@ namespace tl::bc {
     private:
         tl::AbstractReader &mReader;
     };
+#if __cplusplus >= 201703L
 }
-
+#else
+}}
+#endif //__cplusplus >= 201703L
 
 #endif //TESTLIBRARY_INSTREAM_H
 
@@ -645,32 +829,43 @@ namespace tl::bc {
 #define TESTLIBRARY_TESTLIBGLOBALS_H
 
 
+#if __cplusplus >= 201703L
 namespace tl::bc
+#else
+namespace tl { namespace bc
+#endif //__cplusplus >= 201703L
 {
     InStream inf(tl::StandardReaders::input);
 
     InStream ouf(tl::StandardReaders::output);
 
     InStream ans(tl::StandardReaders::ans);
+#if __cplusplus >= 201703L
 }
+#else
+}}
+#endif //__cplusplus >= 201703L
 
 #endif //TESTLIBRARY_TESTLIBGLOBALS_H
 
 #ifndef TESTLIBRARY_TESTLIBFUNCS_H
 #define TESTLIBRARY_TESTLIBFUNCS_H
 
-#include <cstdarg>
 #include <string>
 
 
 
+#if __cplusplus >= 201703L
 namespace tl::bc
+#else
+namespace tl { namespace bc
+#endif //__cplusplus >= 201703L
 {
     void setTestCase(int testCase);
 
     void unsetTestCase();
 
-    [[noreturn]] static void __testlib_fail(const std::string &message);
+    [[noreturn]] static void __testlib_fail(const std::string& message);
 
     static bool __testlib_prelimIsNaN(double r);
 
@@ -693,17 +888,16 @@ namespace tl::bc
 
     inline double doubleDelta(double expected, double result);
 
-    static void __testlib_set_binary(std::FILE *file);
+    static void __testlib_set_binary(std::FILE* file);
 
     void prepareOpts(int argc, char* argv[]);
 
 
-    void registerTestlibCmd(int argc, char *argv[]);
+    void registerTestlibCmd(int argc, char* argv[]);
 
-    void setName(const char *format, ...);
+    void setName(const char* format, ...);
 
-    enum TResult
-    {
+    enum TResult {
         _ok = 0,
         _wa = 1,
         _pe = 2,
@@ -714,15 +908,15 @@ namespace tl::bc
         _partially = 16
     };
 
-    void quitf(TResult result, const char *format, ...);
+    void quitf(TResult result, const char* format, ...);
 
     inline std::string englishEnding(int x);
 
-    inline std::string compress(const std::string &s);
+    inline std::string compress(const std::string& s);
 
-    static inline long long stringToLongLong(InStream &in, const char *buffer);
+    static inline long long stringToLongLong(InStream& in, const char* buffer);
 
-    static inline unsigned long long stringToUnsignedLongLong(InStream &in, const char *buffer);
+    static inline unsigned long long stringToUnsignedLongLong(InStream& in, const char* buffer);
 
     inline bool doubleCompare(double expected, double result, double MAX_DOUBLE_ERROR);
 
@@ -730,29 +924,29 @@ namespace tl::bc
 
 
     template<typename T>
-    static inline T __testlib_abs(const T &x)
-    {
+    static inline T __testlib_abs(const T& x) {
         return x > 0 ? x : -x;
     }
 
     template<typename T>
-    static inline T __testlib_min(const T& a, const T& b)
-    {
+    static inline T __testlib_min(const T& a, const T& b) {
         return a < b ? a : b;
     }
 
     template<typename T>
-    static inline T __testlib_max(const T& a, const T& b)
-    {
+    static inline T __testlib_max(const T& a, const T& b) {
         return a > b ? a : b;
     }
 
     template<typename T>
-    static std::string vtos(const T &t)
-    {
+    static std::string vtos(const T& t) {
         return std::to_string(t);
     }
+#if __cplusplus >= 201703L
 }
+#else
+}}
+#endif //__cplusplus >= 201703L
 
 #endif //TESTLIBRARY_TESTLIBFUNCS_H
 
@@ -761,12 +955,21 @@ namespace tl::bc
 
 class pattern;
 
+#if __cplusplus >= 201703L
 namespace tl::bc
+#else
+namespace tl { namespace bc
+#endif //__cplusplus >= 201703L
 {
-    class random_t {
+    class random_t
+    {
     public:
     };
+#if __cplusplus >= 201703L
 }
+#else
+}}
+#endif //__cplusplus >= 201703L
 
 #endif //TESTLIBRARY_RANDOM_T_H
 
@@ -777,12 +980,15 @@ namespace tl::bc
 #include <vector>
 
 
+#if __cplusplus >= 201703L
 namespace tl::bc
+#else
+namespace tl { namespace bc
+#endif //__cplusplus >= 201703L
 {
-class pattern
-{
+    class pattern {
     public:
-        pattern(std::string s);
+        explicit pattern(std::string s);
 
         std::string next(random_t& rnd) const;
 
@@ -799,7 +1005,11 @@ class pattern
         int from;
         int to;
     };
+#if __cplusplus >= 201703L
 }
+#else
+}}
+#endif //__cplusplus >= 201703L
 
 #endif //TESTLIBRARY_PATTERN_H
 
@@ -807,81 +1017,283 @@ class pattern
 
 namespace tl
 {
-    void AbstractReader::changeMode()
+    Logger::Logger(const char* funcName,
+                   std::uint8_t funcNameSize) :
+            mFuncName(funcName),
+            mFuncNameSize(funcNameSize)
     {
+        if (mFile == nullptr)
+        {
+#ifdef LOGS_TO_STDIN
+            mFile = stdin;
+#else
+            mFile = std::fopen("../logs/logs.txt", "w");
+#endif
+        }
+    }
+
+    void
+    Logger::funcStartLog(const char* format, ...)
+    {
+        for (std::uint8_t numTab = 0; numTab < mCountTabs; numTab++)
+        {
+            putc('\t', mFile);
+        }
+
+        write(mFuncName, mFuncNameSize);
+        write(" has started", 12);
+
+        if (format != nullptr)
+        {
+            write(" with args: ", 12);
+            std::va_list ap;
+            va_start(ap, format);
+            std::vfprintf(mFile, format, ap);
+            va_end(ap);
+        }
+        putc('\n', mFile);
+
+        mCountTabs++;
+
+#ifdef TIME_CHECK_IN_LOGS
+#endif //TIME_CHECK_IN_LOGS
+    }
+
+    void
+    Logger::funcFinishLog(const char* format, ...)
+    {
+        for (std::uint8_t numTab = 0; numTab < mCountTabs; numTab++)
+        {
+            putc('\t', mFile);
+        }
+
+        write(mFuncName, mFuncNameSize);
+        write(" has finished", 13);
+
+        if (format != nullptr)
+        {
+            write(" with return: ", 14);
+            std::va_list ap;
+            va_start(ap, format);
+            std::vfprintf(mFile, format, ap);
+            va_end(ap);
+        }
+        putc('\n', mFile);
+
+        mCountTabs--;
+
+#ifdef TIME_CHECK_IN_LOGS
+#endif //TIME_CHECK_IN_LOGS
+    }
+
+    void
+    Logger::resultLog(const char* messageFormat, std::va_list& ap)
+    {
+        write("checker has finished with message ", 34);
+        std::vfprintf(mFile, messageFormat, ap);
+    }
+
+    FILE* Logger::mFile = nullptr;
+    std::uint8_t Logger::mCountTabs = 0;
+
+    void
+    Logger::write(const char *message, std::size_t messageSize)
+    {
+        std::fwrite(static_cast<const void*>(message),
+                    1, messageSize, mFile);
+    }
+}
+
+
+namespace tl
+{
+    void ResultWriter::vOKResultWr(const char* format,
+                                   std::va_list& ap)
+    {
+        printMessage("ok ", format, ap);
+    }
+
+    void ResultWriter::vWAResultWr(const char* format,
+                                   std::va_list& ap)
+    {
+        printMessage("wa ", format, ap);
+    }
+
+    void ResultWriter::vPEResultWr(const char* format,
+                                   std::va_list& ap)
+    {
+        printMessage("pe ", format, ap);
+    }
+
+    void ResultWriter::OKResultWr(const char *format, ...)
+    {
+        std::va_list ap;
+        va_start(ap, format);
+        vOKResultWr(format, ap);
+        va_end(ap);
+    }
+
+    void ResultWriter::WAResultWr(const char *format, ...)
+    {
+        std::va_list ap;
+        va_start(ap, format);
+        vWAResultWr(format, ap);
+        va_end(ap);
+    }
+
+    void ResultWriter::PEResultWr(const char *format, ...)
+    {
+        std::va_list ap;
+        va_start(ap, format);
+        vPEResultWr(format, ap);
+        va_end(ap);
+    }
+
+    void ResultWriter::printMessage(const char *result,
+                                    const char *format,
+                                    std::va_list& ap)
+    {
+        ::write(1, static_cast<const void*>(result), 3);
+
+        std::vprintf(format, ap);
+
+        Logger::resultLog(format, ap);
+
+        std::exit(0);
+    }
+}
+
+
+namespace tl
+{
+    void
+    AbstractReader::changeMode()
+    {
+        FUNC_START_LOG(logger);
+
         mIgnoreWhitespaces = !mIgnoreWhitespaces;
+
+        FUNC_FINISH_LOG(logger);
     }
 
     AbstractReader::~AbstractReader()
     {
+        FUNC_START_LOG(logger);
+
         delete[] mBegin;
+
+        FUNC_FINISH_LOG(logger);
     }
 
     bool
     AbstractReader::isOpen() const
     {
-        return mData != nullptr;
+        FUNC_START_LOG(logger);
+
+        BOOL_FUNC_RETURN_LOG(logger, result, mData != nullptr);
     }
 
     bool
     AbstractReader::isEndOfFile() const
     {
-        return *mData == '\000';
+        FUNC_START_LOG(logger);
+
+        BOOL_FUNC_RETURN_LOG(logger, result, *mData == '\000');
     }
 
     void
     AbstractReader::skipWhitespaces()
     {
+        FUNC_START_LOG(logger);
+
         while (isWhitespace() && !isEndOfFile())
         {
             mData++;
         }
+
+        FUNC_FINISH_LOG(logger);
     }
 
     void
     AbstractReader::skipChar()
     {
+        FUNC_START_LOG(logger);
+
         if (!isEndOfFile())
         {
             mData++;
         }
+
+        FUNC_FINISH_LOG(logger);
     }
 
     void
     AbstractReader::readAllFile(char*& fileStr)
     {
-        fileStr = mBegin;
+        FUNC_START_LOG(logger);
+
+        IS_NOT_OPEN_ASSERT;
+
+        std::strcpy(fileStr, mBegin);
+
+        FUNC_FINISH_LOG(logger);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readWhitespace(char& whitespace)
     {
-        if (isNotWhitespace())
-        {
-            return false;
-        }
+        FUNC_START_LOG(logger);
 
-        return readChar(whitespace);
-    }
+        IS_NOT_OPEN_ASSERT;
 
-    bool
-    AbstractReader::readWhitespaces(char*& whitespaces)
-    {
-        return readAbstractStr(whitespaces, &AbstractReader::isWhitespace);
-    }
-
-    bool
-    AbstractReader::readWhitespaces(std::string& whitespaces)
-    {
-        return readAbstractStr(whitespaces, &AbstractReader::isWhitespace);
-    }
-
-    bool
-    AbstractReader::readChar(char& c)
-    {
         if (isEndOfFile())
         {
-            return false;
+            READ_NEG_RESULT(logger, READ_EOF,
+                            "expected whitespace, but found end of file");
+        }
+
+        if (isNotWhitespace())
+        {
+            READ_NEG_RESULT(logger, READ_TYPE_ERROR,
+                            "expected whitespace, but found another symbol");
+        }
+
+        whitespace = *mData++;
+
+        READ_POS_RESULT(logger, READ_SUCCESS);
+    }
+
+    READ_RET_TYPE
+    AbstractReader::readWhitespaces(char*& whitespaces)
+    {
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,
+                readAbstractStr(whitespaces, &AbstractReader::isWhitespace));
+    }
+
+    READ_RET_TYPE
+    AbstractReader::readWhitespaces(std::string& whitespaces)
+    {
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,
+                readAbstractStr(whitespaces, &AbstractReader::isWhitespace));
+    }
+
+    READ_RET_TYPE
+    AbstractReader::readChar(char& c)
+    {
+        FUNC_START_LOG(logger);
+
+        IS_NOT_OPEN_ASSERT;
+
+        if (isEndOfFile())
+        {
+            READ_NEG_RESULT(logger, READ_EOF,
+                            "expected char, but found end of file");
         }
 
         c = *mData++;
@@ -891,228 +1303,329 @@ namespace tl
             skipWhitespaces();
         }
 
-        return true;
+        READ_POS_RESULT(logger, EXIT_SUCCESS);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readNum(std::int8_t& num)
     {
-        return readAbstractSignedInt(num,
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,
+                readAbstractSignedInt(num,
                                      static_cast<std::int8_t>(INT8_MAX),
-                                     static_cast<std::int8_t>(INT8_MIN));
+                                     static_cast<std::int8_t>(INT8_MIN)));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readNum(std::uint8_t& num)
     {
-        return readAbstractInt(num,
-                               static_cast<std::uint8_t>(UINT8_MAX));
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,
+                readAbstractInt(num,
+                                static_cast<std::uint8_t>(UINT8_MAX)));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readNum(std::int16_t& num)
     {
-        return readAbstractSignedInt(num,
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,
+                readAbstractSignedInt(num,
                                      static_cast<std::int16_t>(INT16_MAX),
-                                     static_cast<std::int16_t>(INT16_MIN));
+                                     static_cast<std::int16_t>(INT16_MIN)));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readNum(std::uint16_t& num)
     {
-        return readAbstractInt(num,
-                               static_cast<std::uint16_t>(UINT16_MAX));
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,
+                readAbstractInt(num,
+                               static_cast<std::uint16_t>(UINT16_MAX)));
     }
 
-    bool
-    AbstractReader::readNum(std::int32_t &num)
+    READ_RET_TYPE
+    AbstractReader::readNum(std::int32_t& num)
     {
-        return readAbstractSignedInt(num, INT32_MAX, INT32_MAX);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,
+                readAbstractSignedInt(num, INT32_MAX, INT32_MAX));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readNum(std::uint32_t& num)
     {
-        return readAbstractInt(num, UINT32_MAX);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,
+                readAbstractInt(num, UINT32_MAX));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readNum(std::int64_t& num)
     {
-        return readAbstractSignedInt(num, INT64_MAX, INT64_MIN);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,
+                readAbstractSignedInt(num, INT64_MAX, INT64_MIN));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readNum(std::uint64_t& num)
     {
-        return readAbstractInt(num, UINT64_MAX);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,
+                readAbstractInt(num, UINT64_MAX));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt8(std::int8_t& i)
     {
-        return readNum(i);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(logger, result, readNum(i));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt8(std::uint8_t& i)
     {
-        return readNum(i);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(logger, result, readNum(i));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt16(std::int16_t& i)
     {
-        return readNum(i);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(logger, result, readNum(i));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt16(std::uint16_t& i)
     {
-        return readNum(i);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(logger, result, readNum(i));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt32(std::int32_t& i)
     {
-        return readNum(i);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(logger, result, readNum(i));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt32(std::uint32_t& i)
     {
-        return readNum(i);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(logger, result, readNum(i));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt64(std::int64_t& i)
     {
-        return readNum(i);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(logger, result, readNum(i));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt64(std::uint64_t& i)
     {
-        return readNum(i);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(logger, result, readNum(i));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readShort(short& s)
     {
-        return readNum(s);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(logger, result, readNum(s));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUShort(unsigned short& s)
     {
-        return readNum(s);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(logger, result, readNum(s));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt(int& i)
     {
-        return readNum(i);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(logger, result, readNum(i));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt(unsigned int& i)
     {
-        return readNum(i);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(logger, result, readNum(i));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readLong(long& l)
     {
+        FUNC_START_LOG(logger);
+
 #ifdef __GNUC__
-        return readNum(l);
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,readNum(l));
 #elif defined(_MSC_VER)
-        return readAbstractSignedInt(l,
-            static_cast<long>(INT32_MAX),
-            static_cast<long>(INT32_MIN));
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,
+                readAbstractSignedInt(l,
+                                      static_cast<long>(INT32_MAX),
+                                      static_cast<long>(INT32_MIN)));
 #endif
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readULong(unsigned long& l)
     {
+        FUNC_START_LOG(logger);
+
 #ifdef __GNUC__
-        return readNum(l);
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result, readNum(l));
 #elif defined(_MSC_VER)
-        return readAbstractInt(l,
-            static_cast<unsigned long>(UINT32_MAX));
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,
+                readAbstractInt(l,
+                                static_cast<unsigned long>(UINT32_MAX)));
 #endif
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readLongLong(long long& ll)
     {
 #ifdef __GNUC__
-        return readAbstractSignedInt(ll,
-            static_cast<long long>(INT64_MAX),
-            static_cast<long long>(INT64_MIN));
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,
+                readAbstractSignedInt(ll,
+                                      static_cast<long long>(INT64_MAX),
+                                      static_cast<long long>(INT64_MIN)));
 #elif defined(_MSC_VER)
-        return readNum(ll);
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result, readNum(ll));
 #endif
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readULongLong(unsigned long long& ll)
     {
 #ifdef __GNUC__
-        return readAbstractInt(ll,
-            static_cast<unsigned long long>(UINT64_MAX));
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result,
+                readAbstractInt(ll,
+                                static_cast<unsigned long long>(UINT64_MAX)));
 #elif defined(_MSC_VER)
-        return readNum(ll);
+        READ_USE_INSERT_FUNC_RESULT(
+                logger, result, readNum(ll));
 #endif
     }
 
-    bool
-    AbstractReader::readHugeInt(hugeIntPtr& num)
+    READ_RET_TYPE
+    AbstractReader::readHugeInt(hugeIntPtr& i)
     {
-        return readAbstractStr(num, &AbstractReader::isNotWhitespace,
-                               [this]()
-                                {
-                                    return isNotDigit();
-                                });
-    }
+        FUNC_START_LOG(logger);
 
-    bool
-    AbstractReader::readHugeInt(hugeInt& num)
-    {
-        return readAbstractStr(num, &AbstractReader::isNotWhitespace,
+        //TODO refactoring
+
+        return readAbstractStr(i, &AbstractReader::isNotWhitespace,
                                [this]()
                                {
                                    return isNotDigit();
                                });
     }
 
-    bool
+    READ_RET_TYPE
+    AbstractReader::readHugeInt(hugeInt& i)
+    {
+        FUNC_START_LOG(logger);
+        //TODO refactoring
+
+        return readAbstractStr(i, &AbstractReader::isNotWhitespace,
+                               [this]()
+                               {
+                                   return isNotDigit();
+                               });
+    }
+
+    READ_RET_TYPE
     AbstractReader::readNum(float& num)
     {
-        return readAbstractReal(num, FLT_MAX, FLT_MIN);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(logger, result,
+                                    readAbstractReal(num, FLT_MAX, FLT_MIN));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readNum(double& num)
     {
-        return readAbstractReal(num, DBL_MAX, DBL_MIN);
+        FUNC_START_LOG(logger);
+
+        READ_USE_INSERT_FUNC_RESULT(logger, result,
+                                    readAbstractReal(num, DBL_MAX, DBL_MIN));
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readBool(bool& b)
     {
-        if (isEndOfFile() || (*mData != '0' && *mData != '1'))
+        FUNC_START_LOG(logger);
+
+        IS_NOT_OPEN_ASSERT;
+
+        if (isEndOfFile())
         {
-            return false;
+            READ_NEG_RESULT(logger, READ_EOF,
+                            "expected bool, but found end of file");
+        }
+
+        if((*mData != '0' && *mData != '1'))
+        {
+            READ_NEG_RESULT(logger, READ_TYPE_ERROR,
+                            "expected bool, but found another symbol");
         }
 
         b = static_cast<bool>(*mData++ - '0');
 
-        if (isNotWhitespace())
+        if (isNotWhitespace() && !isEndOfFile())
         {
             mData--;
 
-            return false;
+            READ_NEG_RESULT(logger, READ_TYPE_ERROR,
+                            "expected whitespace after bool");
         }
 
         if (mIgnoreWhitespaces)
@@ -1120,78 +1633,94 @@ namespace tl
             skipWhitespaces();
         }
 
-        return true;
+        READ_POS_RESULT(logger, READ_SUCCESS);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readStr(char* s, const std::size_t sSize)
     {
+        FUNC_START_LOG(logger);
+
+        IS_NOT_OPEN_ASSERT;
+
         TESTLIBRARY_NONNULL_ASSERT(s);
 
         if (isEndOfFile())
         {
-            return false;
+            READ_NEG_RESULT(logger, READ_EOF,
+                            "expected bool, but found end of file");
         }
 
+        //TODO reactoring
         for (std::size_t pos(UINT64_C(0));
              pos < sSize; pos++)
         {
-            if (!readChar(s[pos]))
-            {
-                return false;
-            }
+//            if (!readChar(s[pos]))
+//            {
+//                READ_NEG_RESULT(logger, READ_INCORRECT_SIZE,
+//                                "to less symbols");
+//            }
         }
 
-        return true;
+        READ_POS_RESULT(logger, READ_SUCCESS);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readStr(char*& emptyS)
     {
+        FUNC_START_LOG(logger);
+
+        //TODO refactoring
         return readAbstractStr(emptyS, &AbstractReader::isNotWhitespace);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readStr(std::string& s, const std::size_t sSize)
     {
-        if (isEndOfFile())
-        {
-            return false;
-        }
+        FUNC_START_LOG(logger);
 
-        s.resize(sSize);
-
-        char* begin = mData;
-        for (char& sym : s)
-        {
-            if (mIgnoreWhitespaces)
-            {
-                skipWhitespaces();
-            }
-
-            if (!readChar(sym))
-            {
-                mData = begin;
-
-                return false;
-            }
-        }
-
-        if (mIgnoreWhitespaces)
-        {
-            skipWhitespaces();
-        }
-
-        return true;
+        //TODO refactoring
+//        if (isEndOfFile())
+//        {
+//            return false;
+//        }
+//
+//        s.resize(sSize);
+//
+//        char* begin = mData;
+//        for (char& sym : s)
+//        {
+//            if (mIgnoreWhitespaces)
+//            {
+//                skipWhitespaces();
+//            }
+//
+//            if (!readChar(sym))
+//            {
+//                mData = begin;
+//
+//                return false;
+//            }
+//        }
+//
+//        if (mIgnoreWhitespaces)
+//        {
+//            skipWhitespaces();
+//        }
+//
+//        return true;
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readStr(std::string& s)
     {
+        FUNC_START_LOG(logger);
+
+        //TODO refactoring
         return readAbstractStr(s, &AbstractReader::isNotWhitespace);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt8ArrSplitC(std::int8_t* arr,
                                      std::size_t arrSize,
                                      char delim)
@@ -1199,7 +1728,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt8ArrSplitC(std::uint8_t* arr,
                                      std::size_t arrSize,
                                      char delim)
@@ -1207,7 +1736,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt16ArrSplitC(std::int16_t* arr,
                                      std::size_t arrSize,
                                      char delim)
@@ -1215,7 +1744,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt16ArrSplitC(std::uint16_t* arr,
                                      std::size_t arrSize,
                                      char delim)
@@ -1223,7 +1752,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readIntArrSplitC(std::int32_t* arr,
                                      std::size_t arrSize,
                                      char delim)
@@ -1231,7 +1760,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUIntArrSplitC(std::uint32_t* arr,
                                      std::size_t arrSize,
                                      char delim)
@@ -1239,7 +1768,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt64ArrSplitC(std::int64_t* arr,
                                      std::size_t arrSize,
                                      char delim)
@@ -1247,7 +1776,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt64ArrSplitC(std::uint64_t* arr,
                                      std::size_t arrSize,
                                      char delim)
@@ -1255,7 +1784,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt8ArrSplitS(std::int8_t* arr,
                                      std::size_t arrSize,
                                      char* delim)
@@ -1263,7 +1792,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt8ArrSplitS(std::uint8_t* arr,
                                      std::size_t arrSize,
                                      char* delim)
@@ -1271,7 +1800,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt16ArrSplitS(std::int16_t* arr,
                                      std::size_t arrSize,
                                      char* delim)
@@ -1279,7 +1808,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt16ArrSplitS(std::uint16_t* arr,
                                      std::size_t arrSize,
                                      char* delim)
@@ -1287,7 +1816,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readIntArrSplitS(std::int32_t* arr,
                                      std::size_t arrSize,
                                      char* delim)
@@ -1295,7 +1824,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUIntArrSplitS(std::uint32_t* arr,
                                      std::size_t arrSize,
                                      char* delim)
@@ -1303,7 +1832,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt64ArrSplitS(std::int64_t* arr,
                                      std::size_t arrSize,
                                      char* delim)
@@ -1311,7 +1840,7 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt64ArrSplitS(std::uint64_t* arr,
                                      std::size_t arrSize,
                                      char* delim)
@@ -1319,139 +1848,139 @@ namespace tl
         return readAbstractNumArr(arr, arrSize, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt8ArrSplitC(std::vector <std::int8_t>& arr,
                                      char delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt8ArrSplitC(std::vector <std::uint8_t>& arr,
                                      char delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt16ArrSplitC(std::vector <std::int16_t>& arr,
                                      char delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt16ArrSplitC(std::vector <std::uint16_t>& arr,
                                      char delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readIntArrSplitC(std::vector <std::int32_t>& arr,
                                      char delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUIntArrSplitC(std::vector <std::uint32_t>& arr,
                                      char delim)
     {
         return readAbstractNumArr(arr, delim);
     }
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt64ArrSplitC(std::vector <std::int64_t>& arr,
                                      char delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt64ArrSplitC(std::vector <std::uint64_t>& arr,
                                      char delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readFltArrSplitC(std::vector<float>& arr,
                                      char delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readDblArrSplitC(std::vector<double>& arr,
                                      char delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt8ArrSplitS(std::vector<std::int8_t>& arr,
                                      char* delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt8ArrSplitS(std::vector<std::uint8_t>& arr,
                                      char* delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt16ArrSplitS(std::vector<std::int16_t>& arr,
                                      char* delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt16ArrSplitS(std::vector<std::uint16_t>& arr,
                                      char* delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readIntArrSplitS(std::vector<std::int32_t>& arr,
                                      char* delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUIntArrSplitS(std::vector<std::uint32_t>& arr,
                                      char* delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readInt64ArrSplitS(std::vector<std::int64_t>& arr,
                                      char* delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readUInt64ArrSplitS(std::vector<std::uint64_t>& arr,
                                      char* delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readFltArrSplitS(std::vector<float>& arr,
                                      char* delim)
     {
         return readAbstractNumArr(arr, delim);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readDblArrSplitS(std::vector<double>& arr,
                                      char* delim)
     {
@@ -1463,48 +1992,70 @@ namespace tl
             mData(nullptr),
             mBegin(nullptr)
     {
+        FUNC_START_LOG(logger, ignoreWhitespaces ? "true" : "false");
 
+        FUNC_FINISH_LOG(logger);
     }
 
     bool
     AbstractReader::isNotWhitespace() const
     {
-        return *mData != ' ' && *mData != '\n' && *mData != '\r';
+        FUNC_START_LOG(logger);
+
+        BOOL_FUNC_RETURN_LOG(logger, result,
+                             *mData != ' ' && *mData != '\n' && *mData != '\r');
     }
 
     bool
     AbstractReader::isWhitespace() const
     {
-        return !isNotWhitespace();
+        FUNC_START_LOG(logger);
+
+        BOOL_FUNC_RETURN_LOG(logger, result, !isNotWhitespace());
     }
 
     bool
     AbstractReader::isNotDigit()
     {
-        return *mData < '0' || *mData > '9';
+        FUNC_START_LOG(logger);
+
+        BOOL_FUNC_RETURN_LOG(logger, result,
+                             *mData < '0' || *mData > '9');
     }
 
     template<typename Num>
     bool
     AbstractReader::isNotInRange(const Num& num,
-                                  const Num& nextNum,
-                                  const Num& limit)
+                                 const Num& nextNum,
+                                 const Num& limit)
     {
-        return ((limit - nextNum) / 10) < num;
+        FUNC_START_LOG(logger, (std::to_string(num) + ", " +
+                               std::to_string(nextNum) + ", " +
+                               std::to_string(limit)).c_str());
+
+        BOOL_FUNC_RETURN_LOG(logger, result, ((limit - nextNum) / 10) < num);
     }
 
 #define BUFF_SIZE UINT64_C(256)
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readAbstractStr(char*& s,
                                     bool (AbstractReader::*continueCond)() const,
                                     const std::function<bool()>& exitCond)
     {
-        if (isEndOfFile() || !(this->*continueCond)())
-        {
-            s = nullptr;
+        //TODO refactoring
+        FUNC_START_LOG(logger);
 
-            return false;
+        if (isEndOfFile())
+        {
+            READ_NEG_RESULT(logger, READ_EOF,
+                            "expected string, but found end of file");
+        }
+
+        if (!(this->*continueCond)())
+        {
+            READ_NEG_RESULT(logger, READ_TYPE_ERROR,
+                            "");
         }
 
         s = new char [BUFF_SIZE];
@@ -1519,7 +2070,8 @@ namespace tl
                                 pos + UINT64_C(1)));
                 s[pos] = '\000';
 
-                return false;
+                READ_NEG_RESULT(logger, READ_TYPE_ERROR,
+                                "");
             }
 
             s[pos++] = *mData++;
@@ -1541,26 +2093,37 @@ namespace tl
             skipWhitespaces();
         }
 
-        return true;
+        READ_POS_RESULT(logger, READ_SUCCESS);
     }
 
-    bool
+    READ_RET_TYPE
     AbstractReader::readAbstractStr(std::string& s,
                                     bool (AbstractReader::*continueCond)() const,
                                     const std::function<bool()>& exitCond)
     {
+        //TODO refactoring
+        FUNC_START_LOG(logger);
+
         s.clear();
 
         if (isEndOfFile())
         {
-            return false;
+            READ_NEG_RESULT(logger, READ_EOF,
+                            "expected string, but found end of file");
+        }
+
+        if (!(this->*continueCond)())
+        {
+            READ_NEG_RESULT(logger, READ_TYPE_ERROR,
+                            "");
         }
 
         while ((this->*continueCond)() && !isEndOfFile())
         {
             if (exitCond())
             {
-                return false;
+                READ_NEG_RESULT(logger, READ_TYPE_ERROR,
+                                "");
             }
 
             s.push_back(*mData++);
@@ -1571,16 +2134,21 @@ namespace tl
             skipWhitespaces();
         }
 
-        return true;
+        READ_POS_RESULT(logger, READ_SUCCESS);
     }
 
     template<typename Int>
-    bool
+    READ_RET_TYPE
     AbstractReader::readAbstractInt(Int& num, const Int limit)
     {
+        FUNC_START_LOG(logger, "%lld", limit);
+
+        IS_NOT_OPEN_ASSERT;
+
         if (isEndOfFile())
         {
-            return false;
+            READ_NEG_RESULT(logger, READ_EOF,
+                            "expected int, but found end of file");
         }
 
         num = 0;
@@ -1594,7 +2162,8 @@ namespace tl
             {
                 mData = begin;
 
-                return false;
+                READ_NEG_RESULT(logger, READ_TYPE_ERROR,
+                                "found another type");
             }
             num = num * 10 + nextNum;
 
@@ -1606,13 +2175,23 @@ namespace tl
             skipWhitespaces();
         }
 
-        return true;
+        READ_POS_RESULT(logger, READ_SUCCESS);
     }
 
     template<typename Int>
-    bool
+    READ_RET_TYPE
     AbstractReader:: readAbstractSignedInt(Int& num, const Int maxSize, const Int minSize)
     {
+        FUNC_START_LOG(logger, "%lld, %lld", maxSize, minSize);
+
+        IS_NOT_OPEN_ASSERT;
+
+        if (isEndOfFile())
+        {
+            READ_NEG_RESULT(logger, READ_EOF,
+                            "expected int, but found end of file");
+        }
+
         bool minus(false);
         if (*mData == '-')
         {
@@ -1620,26 +2199,30 @@ namespace tl
             mData++;
         }
 
-        if (!readAbstractInt(num, minus ? minSize : maxSize))
-        {
-            return false;
-        }
+        READ_CHECK_INSERT_FUNC_RESULT(logger,
+                                      result,
+                                      readAbstractInt(num, minus ? minSize : maxSize));
 
         if (minus)
         {
             num *= -1;
         }
 
-        return true;
+        READ_POS_RESULT(logger, READ_SUCCESS);
     }
 
     template<typename Real>
-    bool
+    READ_RET_TYPE
     AbstractReader::readAbstractReal(Real& num, const Real maxSize, const Real minSize)
     {
+        FUNC_START_LOG(logger, "%lf, %lf", maxSize, minSize);
+
+        IS_NOT_OPEN_ASSERT;
+
         if (isEndOfFile())
         {
-            return false;
+            READ_NEG_RESULT(logger, READ_EOF,
+                            "expected real, but found end of file");
         }
 
         bool minus(false);
@@ -1649,24 +2232,25 @@ namespace tl
             mData++;
         }
 
-        double limit = minus ? minSize : maxSize;
+        Real limit = minus ? minSize : maxSize;
 
         num = 0.F;
 
         char* begin(mData);
-        Real nexNum;
+        Real nextNum;
         while (*mData != '.' && isNotWhitespace()
                && !isEndOfFile())
         {
-            nexNum = static_cast<Real>(*mData - '0');
+            nextNum = static_cast<Real>(*mData - '0');
             if (isNotDigit()
-                || ((limit - nexNum) / 10) < num)
+                || isNotInRange(num, nextNum, limit))
             {
                 mData = begin;
 
-                return false;
+                READ_NEG_RESULT(logger, READ_TYPE_ERROR,
+                                "expected real");
             }
-            num = num * 10.F + nexNum;
+            num = num * 10.F + nextNum;
 
             mData++;
         }
@@ -1677,7 +2261,8 @@ namespace tl
             {
                 mData = begin;
 
-                return false;
+                READ_NEG_RESULT(logger, READ_TYPE_ERROR,
+                                "expected \'.\' or whitespace or end of file");
             }
 
             Real afterPoint = 0.F;
@@ -1685,14 +2270,15 @@ namespace tl
 
             while (isNotWhitespace() && !isEndOfFile())
             {
-                nexNum = static_cast<Real>(*mData - '0');
+                nextNum = static_cast<Real>(*mData - '0');
                 if (isNotDigit())
                 {
                     mData = begin;
 
-                    return false;
+                    READ_NEG_RESULT(logger, READ_TYPE_ERROR,
+                                    "expected digit, but found another symbol");
                 }
-                afterPoint = afterPoint * 10.F + nexNum;
+                afterPoint = afterPoint * 10.F + nextNum;
                 countDigit++;
 
                 mData++;
@@ -1700,11 +2286,13 @@ namespace tl
 
             afterPoint /= std::pow(10.F, countDigit);
 
+            //TODO fix afterPoint limit
+
             if (((limit - afterPoint) / 10) < num)
             {
                 mData = begin;
 
-                return false;
+                READ_NEG_RESULT(logger, READ_TYPE_ERROR, "");
             }
 
             num += afterPoint;
@@ -1720,161 +2308,165 @@ namespace tl
             skipWhitespaces();
         }
 
-        return true;
+        READ_POS_RESULT(logger, READ_SUCCESS);
     }
 
+    //TODO refactoring
     template<typename Num>
-    bool
+    READ_RET_TYPE
     AbstractReader::readAbstractNumArr(Num* arr, const std::size_t arrSize,
                                        char delim)
     {
         TESTLIBRARY_NONNULL_ASSERT(arr);
 
-        char* begin = mData;
-
-        for (std::size_t numElem(UINT64_C(0));
-             numElem < arrSize; numElem++)
-        {
-            if (!readNum(arr[numElem]))
-            {
-                mData = begin;
-
-                return false;
-            }
-
-            if (!mIgnoreWhitespaces && !isEndOfFile())
-            {
-                if (delim == '\000')
-                {
-                    readWhitespace(delim);
-                }
-                else if (delim != *mData++ || isWhitespace())
-                {
-                    mData = begin;
-
-                    return false;
-                }
-            }
-        }
-
-        return true;
+//        char* begin = mData;
+//
+//        for (std::size_t numElem(UINT64_C(0));
+//             numElem < arrSize; numElem++)
+//        {
+//            if (!readNum(arr[numElem]))
+//            {
+//                mData = begin;
+//
+//                return false;
+//            }
+//
+//            if (!mIgnoreWhitespaces && !isEndOfFile())
+//            {
+//                if (delim == '\000')
+//                {
+//                    readWhitespace(delim);
+//                }
+//                else if (delim != *mData++ || isWhitespace())
+//                {
+//                    mData = begin;
+//
+//                    return false;
+//                }
+//            }
+//        }
+//
+//        return true;
     }
 
+    //TODO refactoring
     template<typename Num>
-    bool
+    READ_RET_TYPE
     AbstractReader::readAbstractNumArr(Num* arr, const std::size_t arrSize,
                                        char* delim)
     {
         TESTLIBRARY_NONNULL_ASSERT(arr);
 
-        char* begin = mData;
-
-        for (std::size_t numElem(UINT64_C(0));
-             numElem < arrSize; numElem++)
-        {
-            if (!readNum(arr[numElem]))
-            {
-                mData = begin;
-
-                return false;
-            }
-
-            if (!mIgnoreWhitespaces && !isEndOfFile())
-            {
-                if (delim == nullptr)
-                {
-                    readWhitespaces(delim);
-                }
-                else
-                {
-                    for (std::size_t numDigitSym(UINT64_C(0));
-                         delim[numDigitSym] != '\000';
-                         numDigitSym++)
-                    {
-                        if (delim[numDigitSym] != *mData++)
-                        {
-                            mData = begin;
-
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-
-        return true;
+//        char* begin = mData;
+//
+//        for (std::size_t numElem(UINT64_C(0));
+//             numElem < arrSize; numElem++)
+//        {
+//            if (!readNum(arr[numElem]))
+//            {
+//                mData = begin;
+//
+//                return false;
+//            }
+//
+//            if (!mIgnoreWhitespaces && !isEndOfFile())
+//            {
+//                if (delim == nullptr)
+//                {
+//                    readWhitespaces(delim);
+//                }
+//                else
+//                {
+//                    for (std::size_t numDigitSym(UINT64_C(0));
+//                         delim[numDigitSym] != '\000';
+//                         numDigitSym++)
+//                    {
+//                        if (delim[numDigitSym] != *mData++)
+//                        {
+//                            mData = begin;
+//
+//                            return false;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        return true;
     }
 
+    //TODO refactoring
     template<typename iterableArrT>
-    bool
+    READ_RET_TYPE
     AbstractReader::readAbstractNumArr(iterableArrT& arr, char delim)
     {
-        char* begin = mData;
-
-        for (auto& elem : arr)
-        {
-            if (!readNum(elem))
-            {
-                mData = begin;
-
-                return false;
-            }
-
-            if (!mIgnoreWhitespaces && !isEndOfFile())
-            {
-                if (delim == '\000')
-                {
-                    readWhitespace(delim);
-                }
-                else if (delim != *mData++ || isWhitespace())
-                {
-                    mData = begin;
-
-                    return false;
-                }
-            }
-        }
-
-        return true;
+//        char* begin = mData;
+//
+//        for (auto& elem : arr)
+//        {
+//            if (!readNum(elem))
+//            {
+//                mData = begin;
+//
+//                return false;
+//            }
+//
+//            if (!mIgnoreWhitespaces && !isEndOfFile())
+//            {
+//                if (delim == '\000')
+//                {
+//                    readWhitespace(delim);
+//                }
+//                else if (delim != *mData++ || isWhitespace())
+//                {
+//                    mData = begin;
+//
+//                    return false;
+//                }
+//            }
+//        }
+//
+//        return true;
     }
 
+    //TODO refactoring
     template<typename iterableArrT>
-    bool
+    READ_RET_TYPE
     AbstractReader::readAbstractNumArr(iterableArrT& arr, char* delim)
     {
-        char* begin = mData;
-
-        for (auto& elem : arr)
-        {
-            if (!readNum(elem))
-            {
-                return false;
-            }
-
-            if (!mIgnoreWhitespaces && !isEndOfFile())
-            {
-                if (delim == nullptr)
-                {
-                    readWhitespaces(delim);
-                }
-                else
-                {
-                    for (std::size_t numDigitSym(UINT64_C(0));
-                         delim[numDigitSym] != '\000';
-                         numDigitSym++)
-                    {
-                        if (delim[numDigitSym] != *mData++)
-                        {
-                            mData = begin;
-
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-
-        return true;
+//        char* begin = mData;
+//
+//        for (auto& elem : arr)
+//        {
+//            if (!readNum(elem))
+//            {
+//                return false;
+//            }
+//
+//            if (!mIgnoreWhitespaces && !isEndOfFile())
+//            {
+//                if (delim == nullptr)
+//                {
+//                    readWhitespaces(delim);
+//                }
+//                else
+//                {
+//                    for (std::size_t numDigitSym(UINT64_C(0));
+//                         delim[numDigitSym] != '\000';
+//                         numDigitSym++)
+//                    {
+//                        if (delim[numDigitSym] != *mData++)
+//                        {
+//                            mData = begin;
+//
+//                            return false;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        return true;
     }
 }
 
@@ -2186,28 +2778,24 @@ namespace tl
     char*
     StringTools::withEnglishEnding(std::uint8_t num)
     {
-        printf("UINT8_T\n");
         return withEnglishEnding(num, "%u");
     }
 
     char*
     StringTools::withEnglishEnding(std::uint16_t num)
     {
-        printf("UINT16_T\n");
         return withEnglishEnding(num, "%u");
     }
 
     char*
     StringTools::withEnglishEnding(std::uint32_t num)
     {
-        printf("UINT32_T\n");
         return withEnglishEnding(num, "%u");
     }
 
     char*
     StringTools::withEnglishEnding(std::uint64_t num)
     {
-        printf("UINT64_T\n");
 #ifdef __GNUC__
         return withEnglishEnding(num, "%lu");
 #elif defined(_MSC_VER)
@@ -2218,7 +2806,6 @@ namespace tl
     char*
     StringTools::withEnglishEnding(std::int8_t num)
     {
-        printf("INT8_T\n");
         return withEnglishEnding(num,
                                  "%i",
                                  num >= 0 ?
@@ -2229,7 +2816,6 @@ namespace tl
     char*
     StringTools::withEnglishEnding(std::int16_t num)
     {
-        printf("INT16_T\n");
         return withEnglishEnding(num,
                                  "%i",
                                  num >= 0 ?
@@ -2240,14 +2826,12 @@ namespace tl
     char*
     StringTools::withEnglishEnding(std::int32_t num)
     {
-        printf("INT32_T\n");
         return withEnglishEnding(num, "%i", num >= 0 ? 0 : 1);
     }
 
     char*
     StringTools::withEnglishEnding(std::int64_t num)
     {
-        printf("INT64_T\n");
 #ifdef __GNUC__
         return withEnglishEnding(num, "%li", num >= 0L ? 0L : 1L);
 #elif defined(_MSC_VER)
@@ -2300,7 +2884,11 @@ namespace tl
 
 #ifndef WITHOUT_BACK_COMP
 
+#if __cplusplus >= 201703L
 namespace tl::bc
+#else
+namespace tl { namespace bc
+#endif //__cplusplus >= 201703L
 {
     InStream::InStream(tl::AbstractReader& reader) :
             mReader(reader)
@@ -2391,10 +2979,19 @@ namespace tl::bc
     {
         return readReal();
     }
+
+#if __cplusplus >= 201703L
 }
+#else
+}}
+#endif //__cplusplus >= 201703L
 
 
+#if __cplusplus >= 201703L
 namespace tl::bc
+#else
+namespace tl { namespace bc
+#endif //__cplusplus >= 201703L
 {
     void setTestCase(int testCase)
     {
@@ -2488,23 +3085,21 @@ namespace tl::bc
 
     void quitf(TResult result, const char* format, ...)
     {
+        std::va_list ap;
+        va_start(ap, format);
+
         switch (result)
         {
             case TResult::_ok:
-                CORRECT_VER(write)(1,
-                                   static_cast<const void*>("ok "),
-                                   3);
+                tl::ResultWriter::vOKResultWr(format, ap);
                 break;
             case TResult::_wa:
-                CORRECT_VER(write)(1,
-                                   static_cast<const void*>("wa "),
-                                   3);
+                tl::ResultWriter::vWAResultWr(format, ap);
                 break;
+            case TResult::_pe:
+                tl::ResultWriter::vPEResultWr(format, ap);
         }
 
-        std::va_list ap;
-        va_start(ap, format);
-        std::vprintf(format, ap);
         va_end(ap);
 
         std::exit(0);
@@ -2535,24 +3130,24 @@ namespace tl::bc
         return tl::StringTools::partOfStr(s);
     }
 
-#define STRING_TO_LONG_LONG(type, limit)                                                     \
-do                                                                                           \
-{                                                                                            \
-    type nextNum;                                                                            \
-    while (*buffer != '\000')                                                                 \
-    {                                                                                        \
-        nextNum = *buffer - '0';                                                             \
-        if (*buffer < '0' || *buffer > '9'                                                   \
-            || (((limit) - nextNum) / 10) < result)                                          \
-        {                                                                                    \
-            quitf(_wa,                                                                       \
-                ("Expected integer, but \"" + __testlib_part(buffer) + "\" found").c_str()); \
-        }                                                                                    \
-        result = result * 10 + nextNum;                                                      \
-                                                                                             \
-        buffer++;                                                                            \
-    }                                                                                        \
-} while(false)
+#define STRING_TO_LONG_LONG(type, limit)                                                         \
+    do                                                                                           \
+    {                                                                                            \
+        type nextNum;                                                                            \
+        while (*buffer != '\000')                                                                \
+        {                                                                                        \
+            nextNum = *buffer - '0';                                                             \
+            if (*buffer < '0' || *buffer > '9'                                                   \
+                || (((limit) - nextNum) / 10) < result)                                          \
+            {                                                                                    \
+                quitf(_wa,                                                                       \
+                    ("Expected integer, but \"" + __testlib_part(buffer) + "\" found").c_str()); \
+            }                                                                                    \
+            result = result * 10 + nextNum;                                                      \
+                                                                                                 \
+            buffer++;                                                                            \
+        }                                                                                        \
+    } while(false)
 
     static inline long long stringToLongLong(InStream &in, const char *buffer)
     {
@@ -2597,16 +3192,34 @@ do                                                                              
         return result;
     }
 
-    std::string upperCase(std::string s) {
+    std::string upperCase(std::string s)
+    {
         std::string res;
-        std::transform(s.begin(), s.end(), std::back_inserter(res), toupper);
+
+#if __cplusplus >= 201703L
+//        std::transform(s.begin(), s.end(),
+//                       std::back_inserter(res), toupper);
+//#else
+        for (char& c : s)
+        {
+            c = std::toupper(c);
+        }
+#endif //__cplusplus >= 201703L
 
         return res;
     }
+#if __cplusplus >= 201703L
 }
+#else
+}}
+#endif //__cplusplus >= 201703L
 
 
+#if __cplusplus >= 201703L
 namespace tl::bc
+#else
+namespace tl { namespace bc
+#endif //__cplusplus >= 201703L
 {
     pattern::pattern(std::string s)
     {
@@ -2630,13 +3243,25 @@ namespace tl::bc
     {
         return std::string();
     }
+#if __cplusplus >= 201703L
 }
+#else
+}}
+#endif //__cplusplus >= 201703L
 
 
+#if __cplusplus >= 201703L
 namespace tl::bc
+#else
+namespace tl { namespace bc
+#endif //__cplusplus >= 201703L
 {
 
+#if __cplusplus >= 201703L
 }
+#else
+}}
+#endif //__cplusplus >= 201703L
 
 #endif
 using namespace tl::bc;
