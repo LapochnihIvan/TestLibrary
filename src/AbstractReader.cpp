@@ -360,9 +360,9 @@ namespace tl
     READ_RET_TYPE
     AbstractReader::readLongLong(long long& ll)
     {
-#ifdef __GNUC__
         FUNC_START_LOG(logger);
 
+#ifdef __GNUC__
         READ_USE_INSERT_FUNC_RESULT(
                 logger, result,
                 readAbstractSignedInt(ll,
@@ -377,9 +377,9 @@ namespace tl
     READ_RET_TYPE
     AbstractReader::readULongLong(unsigned long long& ll)
     {
-#ifdef __GNUC__
         FUNC_START_LOG(logger);
 
+#ifdef __GNUC__
         READ_USE_INSERT_FUNC_RESULT(
                 logger, result,
                 readAbstractInt(ll,

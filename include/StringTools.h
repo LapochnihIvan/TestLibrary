@@ -31,8 +31,7 @@ namespace tl
     private:
         template<typename Int>
         static char* withEnglishEnding(Int num,
-                                       const char* format,
-                                       Int beginSize = 0);
+                                       const char* format);
     };
 }
 

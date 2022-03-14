@@ -48,34 +48,26 @@ namespace tl
     char*
     StringTools::withEnglishEnding(std::int8_t num)
     {
-        return withEnglishEnding(num,
-                                 "%i",
-                                 num >= 0 ?
-                                 static_cast<int8_t>(0) :
-                                 static_cast<int8_t>(1));
+        return withEnglishEnding(num, "%i");
     }
 
     char*
     StringTools::withEnglishEnding(std::int16_t num)
     {
-        return withEnglishEnding(num,
-                                 "%i",
-                                 num >= 0 ?
-                                 static_cast<int16_t>(0) :
-                                 static_cast<int16_t>(1));
+        return withEnglishEnding(num, "%i");
     }
 
     char*
     StringTools::withEnglishEnding(std::int32_t num)
     {
-        return withEnglishEnding(num, "%i", num >= 0 ? 0 : 1);
+        return withEnglishEnding(num, "%i");
     }
 
     char*
     StringTools::withEnglishEnding(std::int64_t num)
     {
 #ifdef __GNUC__
-        return withEnglishEnding(num, "%li", num >= 0L ? 0L : 1L);
+        return withEnglishEnding(num, "%li");
 #elif defined(_MSC_VER)
         return withEnglishEnding(num, "%lli", num >= 0LL ? 0LL : 1LL);
 #endif
@@ -84,12 +76,11 @@ namespace tl
     template<typename Int>
     char*
     StringTools::withEnglishEnding(const Int num,
-                                   const char* format,
-                                   const Int beginSize)
+                                   const char* format)
     {
         Int numSize(
-                static_cast<Int>(std::log10(beginSize == 0 ? num : -num))
-                + 2 + beginSize);
+                static_cast<Int>(std::log10(num >= 0 ? num : -num))
+                + 2 + num >= 0 ? 0 : 1);
         Int resultSize(numSize + 2);
         char* result = new char[resultSize];
         result[resultSize - 1] = '\000';
