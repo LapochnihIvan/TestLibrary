@@ -1,6 +1,8 @@
 #ifndef TESTLIBRARY_ABSTRACTREADER_H
 #define TESTLIBRARY_ABSTRACTREADER_H
 
+#include "TestLibrarySecure.h"
+
 #ifdef __GNUC__
 #   include <sys/stat.h>
 // #elif defined(_MSC_VER)
@@ -15,7 +17,6 @@
 #include <vector>
 #include <functional>
 
-#include "TestLibrarySecure.h"
 #include "TestLibraryIOSettings.h"
 
 #include "ResultWriter.h"
@@ -73,7 +74,7 @@
         FUNC_FINISH_LOG(logger)
 
 #   define READ_CHECK_INSERT_FUNC_RESULT(logger, resultName, insertFuncCall) \
-        READ_USE_INSERT_FUNC_RESULT(logger, resultName, insertFuncCall)
+        insertFuncCall
 #endif //READ_SELFMADE_ERRORS
 
 namespace tl
