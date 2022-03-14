@@ -1,5 +1,9 @@
 #include "../include/Logger.h"
 
+#ifndef LOGS_PATH
+#   define LOGS_PATH
+#endif //LOGS_PATH
+
 namespace tl
 {
     Logger::Logger(const char* funcName,
@@ -12,7 +16,7 @@ namespace tl
 #ifdef LOGS_TO_STDIN
             mFile = stdin;
 #else
-            mFile = std::fopen("../logs/logs.txt", "w");
+            mFile = std::fopen(LOGS_PATH"logs.txt", "w");
 #endif
         }
     }
